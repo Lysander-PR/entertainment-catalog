@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -15,6 +19,8 @@ export class BooksService {
   ) {}
 
   async create(createBookDto: CreateBookDto): Promise<Book> {
+    await this.checkDuplicate(createBookDto.title, createBookDto.author);
+
     const book = this.bookRepository.create({
       author: capitalize(createBookDto.author),
       title: capitalize(createBookDto.title),
@@ -48,5 +54,20 @@ export class BooksService {
 
   remove(id: string) {
     return `This action removes a #${id} book`;
+  }
+
+  async checkDuplicate(title: string, author: string): Promise<boolean> {
+    const exist = await this.bookRepository.existsBy({
+      title: capitalize(title),
+      author: capitalize(author),
+    });
+
+    if (exist) {
+      throw new ConflictException(
+        `Book with title "${title}" and author "${author}" already exists`,
+      );
+    }
+
+    return true;
   }
 }

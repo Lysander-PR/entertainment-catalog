@@ -56,8 +56,10 @@ export class BooksService {
     return `This action updates a #${id} book`;
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} book`;
+  async remove(id: string): Promise<Book> {
+    const book = await this.findOne(id);
+    await this.bookRepository.delete({ id });
+    return book;
   }
 
   async checkDuplicate(title: string, author: string): Promise<boolean> {

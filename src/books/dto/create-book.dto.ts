@@ -1,11 +1,12 @@
 import {
-  IsDateString,
+  IsDate,
   IsOptional,
   IsString,
   Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 import { onlyAlphaWithSpacesString } from '@/common/utils/messages-validator.util';
 import { alphaWithSpacesRegex } from '@/common/utils/regular-expressions.util';
@@ -30,7 +31,8 @@ export class CreateBookDto {
   @MaxLength(50)
   title: string;
 
-  @IsDateString()
+  @IsDate()
+  @Type(() => Date)
   releaseDate: Date;
 
   @IsString()

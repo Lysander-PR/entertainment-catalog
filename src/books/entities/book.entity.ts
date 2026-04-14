@@ -34,10 +34,6 @@ export class Book {
   @CreateDateColumn({
     name: 'created_at',
     default: () => 'CURRENT_TIMESTAMP',
-    transformer: {
-      to: (value: Date) => value.toISOString(),
-      from: (value: string) => new Date(value),
-    },
   })
   createdAt: Date;
 }

@@ -9,16 +9,22 @@ import {
   ParseUUIDPipe,
   UseFilters,
   Query,
+  SerializeOptions,
+  UseInterceptors,
+  ClassSerializerInterceptor,
 } from '@nestjs/common';
 
 import { BooksService } from './books.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
+import { ResponseBookDto } from './dto/response-book.dro';
 import { QueryFailedErrorFilter } from '@/common/filters/query-failed.filter';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 
 @Controller('books')
 @UseFilters(QueryFailedErrorFilter)
+@SerializeOptions({ type: ResponseBookDto })
+@UseInterceptors(ClassSerializerInterceptor)
 export class BooksController {
   constructor(private readonly booksService: BooksService) {}
 

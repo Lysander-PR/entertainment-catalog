@@ -10,6 +10,7 @@ import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { Book } from './entities/book.entity';
 import { capitalize } from '@/common/helpers/capitalize.helper';
+import { PaginationDto } from '@/common/dto/pagination.dto';
 
 @Injectable()
 export class BooksService {
@@ -34,8 +35,11 @@ export class BooksService {
     return this.bookRepository.save(book);
   }
 
-  findAll() {
-    return `This action returns all books`;
+  findAll(paginationDto: PaginationDto): Promise<Book[]> {
+    return this.bookRepository.find({
+      take: paginationDto.limit,
+      skip: (paginationDto.page - 1) * paginationDto.limit,
+    });
   }
 
   async findOne(id: string): Promise<Book> {

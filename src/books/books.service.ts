@@ -22,15 +22,7 @@ export class BooksService {
   async create(createBookDto: CreateBookDto): Promise<Book> {
     await this.checkDuplicate(createBookDto.title, createBookDto.author);
 
-    const book = this.bookRepository.create({
-      author: capitalize(createBookDto.author),
-      title: capitalize(createBookDto.title),
-      releaseDate: createBookDto.releaseDate,
-      publisher: capitalize(createBookDto.publisher),
-      coWriter: createBookDto.coWriter
-        ? capitalize(createBookDto.coWriter)
-        : undefined,
-    });
+    const book = this.bookRepository.create(this.capitalizeBook(createBookDto));
 
     return this.bookRepository.save(book);
   }
@@ -52,8 +44,21 @@ export class BooksService {
     return book;
   }
 
-  update(id: string, updateBookDto: UpdateBookDto) {
-    return `This action updates a #${id} book`;
+  async update(id: string, updateBookDto: UpdateBookDto): Promise<Book> {
+    const book = await this.findOne(id);
+
+    if (updateBookDto.author || updateBookDto.title) {
+      const author = updateBookDto.author || book.author;
+      const title = updateBookDto.title || book.title;
+      await this.checkDuplicate(title, author);
+    }
+
+    const bookUpdated = this.bookRepository.merge(
+      book,
+      this.capitalizeBook(updateBookDto),
+    );
+    await this.bookRepository.update({ id }, bookUpdated);
+    return book;
   }
 
   async remove(id: string): Promise<Book> {
@@ -62,7 +67,7 @@ export class BooksService {
     return book;
   }
 
-  async checkDuplicate(title: string, author: string): Promise<boolean> {
+  private async checkDuplicate(title: string, author: string): Promise<void> {
     const exist = await this.bookRepository.existsBy({
       title: capitalize(title),
       author: capitalize(author),
@@ -73,7 +78,15 @@ export class BooksService {
         `Book with title "${title}" and author "${author}" already exists`,
       );
     }
+  }
 
-    return true;
+  private capitalizeBook(book: Partial<Book>): Partial<Book> {
+    return {
+      ...book,
+      author: capitalize(book.author || ''),
+      title: capitalize(book.title || ''),
+      publisher: capitalize(book.publisher || ''),
+      coWriter: book.coWriter ? capitalize(book.coWriter) : undefined,
+    };
   }
 }

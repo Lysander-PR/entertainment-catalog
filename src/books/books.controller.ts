@@ -55,4 +55,9 @@ export class BooksController {
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.booksService.remove(id);
   }
+
+  @Post('reactivate')
+  reactivate(@Body('id', ParseUUIDPipe) id: string) {
+    return this.booksService.reactivate(id);
+  }
 }

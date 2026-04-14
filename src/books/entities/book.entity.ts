@@ -28,6 +28,9 @@ export class Book {
   })
   releaseDate: Date;
 
+  @Column('bool', { name: 'active', default: true })
+  active: boolean;
+
   @Column('varchar', { name: 'publisher', length: 50 })
   publisher: string;
 

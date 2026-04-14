@@ -31,11 +31,12 @@ export class BooksService {
     return this.bookRepository.find({
       take: paginationDto.limit,
       skip: (paginationDto.page - 1) * paginationDto.limit,
+      where: { active: true },
     });
   }
 
   async findOne(id: string): Promise<Book> {
-    const book = await this.bookRepository.findOneBy({ id });
+    const book = await this.bookRepository.findOneBy({ id, active: true });
 
     if (!book) {
       throw new NotFoundException(`Book with id ${id} not found`);
@@ -63,7 +64,17 @@ export class BooksService {
 
   async remove(id: string): Promise<Book> {
     const book = await this.findOne(id);
-    await this.bookRepository.delete({ id });
+    await this.bookRepository.update({ id }, { active: false });
+    return book;
+  }
+
+  async reactivate(id: string): Promise<Book> {
+    const book = await this.bookRepository.findOne({ where: { id } });
+    if (!book) {
+      throw new NotFoundException(`Book with id ${id} failed to reactivate`);
+    }
+
+    await this.bookRepository.update({ id }, { active: true });
     return book;
   }
 

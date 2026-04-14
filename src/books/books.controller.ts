@@ -13,7 +13,7 @@ import {
 import { BooksService } from './books.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
-import { QueryFailedErrorFilter } from '@/common/flters/query-failed.filter';
+import { QueryFailedErrorFilter } from '@/common/filters/query-failed.filter';
 
 @Controller('books')
 @UseFilters(QueryFailedErrorFilter)

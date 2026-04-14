@@ -19,12 +19,25 @@ export class Book {
   @Column('varchar', { name: 'title', length: 50 })
   title: string;
 
-  @Column('date', { name: 'release_date' })
+  @Column('date', {
+    name: 'release_date',
+    transformer: {
+      to: (value: Date) => value.toISOString().split('T')[0],
+      from: (value: string) => new Date(value),
+    },
+  })
   releaseDate: Date;
 
   @Column('varchar', { name: 'publisher', length: 50 })
   publisher: string;
 
-  @CreateDateColumn({ name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn({
+    name: 'created_at',
+    default: () => 'CURRENT_TIMESTAMP',
+    transformer: {
+      to: (value: Date) => value.toISOString(),
+      from: (value: string) => new Date(value),
+    },
+  })
   createdAt: Date;
 }

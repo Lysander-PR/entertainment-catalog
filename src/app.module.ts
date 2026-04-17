@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BooksModule } from './books/books.module';
 import { envs } from './config/envs';
+import { MoviesModule } from './movies/movies.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { envs } from './config/envs';
       synchronize: true,
     }),
     BooksModule,
+    MoviesModule,
   ],
   providers: [],
 })

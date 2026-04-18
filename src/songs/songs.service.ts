@@ -30,11 +30,15 @@ export class SongsService {
       take: limit,
       skip: (page - 1) * limit,
       where: { active: true },
+      relations: { album: true, genre: true },
     });
   }
 
   async findOne(id: string): Promise<Song> {
-    const song = await this.songRepository.findOneBy({ id, active: true });
+    const song = await this.songRepository.findOne({
+      where: { id, active: true },
+      relations: { album: true, genre: true },
+    });
 
     if (!song) {
       throw new NotFoundException(`Song with id ${id} not found`);
@@ -98,7 +102,7 @@ export class SongsService {
 
     if (exist) {
       throw new ConflictException(
-        `Song with title "${title}" and artist ${artist} already exists`,
+        `Song with title ${title} and artist ${artist} already exists`,
       );
     }
   }

@@ -43,6 +43,7 @@ export class QueryFailedErrorFilter implements ExceptionFilter {
     switch (driverError.code) {
       case '23000':
       case '23001':
+      case '23503':
       case '23505':
       case '23P01':
         throw new ConflictException(driverError.detail);

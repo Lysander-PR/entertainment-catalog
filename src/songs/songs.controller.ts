@@ -19,6 +19,7 @@ import { UpdateSongDto } from './dto/update-song.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import { QueryFailedErrorFilter } from '@/common/filters/query-failed.filter';
 import { Song } from './entities/song.entity';
+import { SongResponseWithoutRelationsDto } from './dto/song-response-without-relations.dto';
 
 @Controller('songs')
 @UseFilters(QueryFailedErrorFilter)
@@ -56,6 +57,7 @@ export class SongsController {
   }
 
   @Delete(':id')
+  @SerializeOptions({ type: SongResponseWithoutRelationsDto })
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.songsService.remove(id);
   }

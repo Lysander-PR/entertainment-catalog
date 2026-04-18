@@ -47,7 +47,7 @@ export class Song {
   @Expose()
   title: string;
 
-  @Column('bool', { name: 'active', default: false })
+  @Column('bool', { name: 'active', default: true })
   active: boolean;
 
   @Column('uuid', { name: 'album_id', nullable: false })

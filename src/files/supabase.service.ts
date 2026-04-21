@@ -1,16 +1,17 @@
 import { envs } from '@/config/envs';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { IStorageService } from '@/common/interfaces/storage.interface';
 
 @Injectable()
-export class SupabaseService {
+export class SupabaseService implements IStorageService {
   private readonly logger = new Logger(SupabaseService.name);
   private supabase: SupabaseClient;
   private bucketName: string;
 
   constructor() {
     this.supabase = createClient(envs.SUPABASE_URL, envs.SUPABASE_KEY);
-    this.bucketName = envs.SUPABASE_KEY;
+    this.bucketName = envs.SUPABASE_BUCKET;
   }
 
   get client() {

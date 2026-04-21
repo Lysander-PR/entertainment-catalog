@@ -1,16 +1,20 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { Cover } from './entities/cover.entity';
-import { SupabaseService } from './supabase.service';
+import {
+  STORAGE_SERVICE,
+  type IStorageService,
+} from '@/common/interfaces/storage.interface';
 
 @Injectable()
 export class FilesService {
   constructor(
     @InjectRepository(Cover)
     private readonly coverRepository: Repository<Cover>,
-    private readonly supabaseService: SupabaseService,
+    @Inject(STORAGE_SERVICE)
+    private readonly supabaseService: IStorageService,
   ) {}
 
   async create(file: Express.Multer.File): Promise<Cover> {

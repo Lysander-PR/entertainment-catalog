@@ -1,7 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Multer } from 'multer';
 import {
-  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
@@ -9,14 +8,13 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
-  SerializeOptions,
+  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FilesService } from './files.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-
-import { Cover } from './entities/cover.entity';
+import type { Response } from 'express';
 
 @Controller('files')
 // @UseInterceptors(ClassSerializerInterceptor)
@@ -37,9 +35,11 @@ export class FilesController {
   }
 
   @Get(':id')
-  // @SerializeOptions({ type: Blob })
-  async getFile(@Param('id', ParseUUIDPipe) id: string) {
-    return this.filesService.getFile(id);
+  async getFile(@Param('id', ParseUUIDPipe) id: string, @Res() res: Response) {
+    const blob = await this.filesService.getFile(id);
+    const buffer = Buffer.from(await blob.arrayBuffer());
+    res.setHeader('Content-Type', blob.type || 'application/octet-stream');
+    res.end(buffer);
   }
 
   @Patch(':id')

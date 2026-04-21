@@ -8,6 +8,9 @@ const enviromentsSchema = z.object({
   DB_USER: z.string(),
   DB_PASSWORD: z.string(),
   DB_NAME: z.string(),
+  SUPABASE_URL: z.url(),
+  SUPABASE_KEY: z.string(),
+  SUPABASE_BUCKET: z.string(),
 });
 
 const { error, data } = enviromentsSchema.safeParse(process.env);

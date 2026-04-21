@@ -21,7 +21,7 @@ export class SupabaseService implements IStorageService {
   async upload(file: Express.Multer.File): Promise<string> {
     const { data, error } = await this.supabase.storage
       .from(this.bucketName)
-      .upload(`folder/${file.originalname}`, file.buffer, {
+      .upload(file.originalname, file.buffer, {
         contentType: file.mimetype,
         upsert: true,
       });
@@ -30,7 +30,7 @@ export class SupabaseService implements IStorageService {
       throw this.handleError(error);
     }
 
-    return data.fullPath;
+    return data.path;
   }
 
   async remove(path: string): Promise<void> {

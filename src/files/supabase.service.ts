@@ -14,44 +14,35 @@ export class SupabaseService implements IStorageService {
     this.bucketName = envs.SUPABASE_BUCKET;
   }
 
-  get client() {
-    return this.supabase;
-  }
-
   async upload(file: Express.Multer.File, fileName: string): Promise<string> {
-    const { data, error } = await this.supabase.storage
+    const response = await this.supabase.storage
       .from(this.bucketName)
       .upload(fileName, file.buffer, {
         contentType: file.mimetype,
         upsert: true,
       });
 
-    if (error) {
-      throw error;
-    }
-
-    return data.path;
+    return this.unwrap(response).path;
   }
 
   async remove(path: string): Promise<void> {
-    const { error } = await this.supabase.storage
+    const response = await this.supabase.storage
       .from(this.bucketName)
       .remove([path]);
 
-    if (error) {
-      throw error;
-    }
+    this.unwrap(response);
   }
 
   async getFile(path: string): Promise<Blob> {
-    const { data, error } = await this.supabase.storage
+    const response = await this.supabase.storage
       .from(this.bucketName)
       .download(path);
 
-    if (error) {
-      throw error;
-    }
+    return this.unwrap(response);
+  }
 
-    return data;
+  private unwrap<T>(response: { data: T | null; error: Error | null }): T {
+    if (response.error) throw response.error;
+    return response.data!;
   }
 }

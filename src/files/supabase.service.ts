@@ -1,5 +1,5 @@
 import { envs } from '@/config/envs';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { IStorageService } from '@/common/interfaces/storage.interface';
 
@@ -27,7 +27,7 @@ export class SupabaseService implements IStorageService {
       });
 
     if (error) {
-      throw this.handleError(error);
+      throw error;
     }
 
     return data.path;
@@ -39,7 +39,7 @@ export class SupabaseService implements IStorageService {
       .remove([path]);
 
     if (error) {
-      throw this.handleError(error);
+      throw error;
     }
   }
 
@@ -49,14 +49,9 @@ export class SupabaseService implements IStorageService {
       .download(path);
 
     if (error) {
-      throw this.handleError(error);
+      throw error;
     }
 
     return data;
-  }
-
-  private handleError(error: Error) {
-    this.logger.error(error.stack);
-    return new BadRequestException(error.name);
   }
 }

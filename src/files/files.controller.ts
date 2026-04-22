@@ -10,14 +10,19 @@ import {
   Post,
   Res,
   UploadedFile,
+  UseFilters,
   UseInterceptors,
 } from '@nestjs/common';
-import { FilesService } from './files.service';
-import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
+
+import { QueryFailedErrorFilter } from '@/common/filters/query-failed.filter';
+import { FilesService } from './files.service';
+import { SupabaseApiFilter } from './filters/supabase-api.filter';
 
 @Controller('files')
 // @UseInterceptors(ClassSerializerInterceptor)
+@UseFilters(QueryFailedErrorFilter, SupabaseApiFilter)
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 

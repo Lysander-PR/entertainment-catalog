@@ -18,7 +18,7 @@ export class FilesService {
   ) {}
 
   async create(file: Express.Multer.File): Promise<Cover> {
-    const url = await this.supabaseService.upload(file);
+    const url = await this.supabaseService.upload(file, file.originalname);
     return this.coverRepository.save({ file: url });
   }
 
@@ -38,7 +38,7 @@ export class FilesService {
   }
 
   async update(id: string, file: Express.Multer.File): Promise<Cover> {
-    const url = await this.supabaseService.upload(file);
+    const url = await this.supabaseService.upload(file, file.originalname);
 
     const cover = await this.findOne(id);
     const fileUpdated = this.coverRepository.merge(cover, { file: url });

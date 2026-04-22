@@ -18,10 +18,10 @@ export class SupabaseService implements IStorageService {
     return this.supabase;
   }
 
-  async upload(file: Express.Multer.File): Promise<string> {
+  async upload(file: Express.Multer.File, fileName: string): Promise<string> {
     const { data, error } = await this.supabase.storage
       .from(this.bucketName)
-      .upload(file.originalname, file.buffer, {
+      .upload(fileName, file.buffer, {
         contentType: file.mimetype,
         upsert: true,
       });

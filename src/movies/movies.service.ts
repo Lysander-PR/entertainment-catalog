@@ -11,24 +11,36 @@ import { Movie } from './entities/movie.entity';
 import { Repository } from 'typeorm';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { FilesService } from '@/files/files.service';
 
 @Injectable()
 export class MoviesService {
   constructor(
     @InjectRepository(Movie)
     private readonly movieRepository: Repository<Movie>,
+    private readonly filesService: FilesService,
   ) {}
 
-  async create(createMovieDto: CreateMovieDto): Promise<Movie> {
+  async create(
+    createMovieDto: CreateMovieDto,
+    file?: Express.Multer.File,
+  ): Promise<Movie> {
     await this.checkDuplicates(
       createMovieDto.title,
       createMovieDto.director,
       createMovieDto.studio,
     );
 
-    const movie = this.movieRepository.create(
-      this.capitalizeMovie(createMovieDto),
-    );
+    let posterId: string | undefined;
+    if (file) {
+      const cover = await this.filesService.create(file);
+      posterId = cover.id;
+    }
+
+    const movie = this.movieRepository.create({
+      posterId,
+      ...this.capitalizeMovie(createMovieDto),
+    });
     return this.movieRepository.save(movie);
   }
 
@@ -51,7 +63,11 @@ export class MoviesService {
     return movie;
   }
 
-  async update(id: string, updateMovieDto: UpdateMovieDto): Promise<Movie> {
+  async update(
+    id: string,
+    updateMovieDto: UpdateMovieDto,
+    file?: Express.Multer.File,
+  ): Promise<Movie> {
     const movie = await this.findOne(id);
 
     if (

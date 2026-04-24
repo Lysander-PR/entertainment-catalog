@@ -13,5 +13,6 @@ import { STORAGE_SERVICE } from '@/common/interfaces/storage.interface';
     FilesService,
     { provide: STORAGE_SERVICE, useClass: SupabaseService },
   ],
+  exports: [FilesService],
 })
 export class FilesModule {}

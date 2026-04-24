@@ -5,6 +5,8 @@ import { envs } from './config/envs';
 import { MoviesModule } from './movies/movies.module';
 import { SongsModule } from './songs/songs.module';
 import { FilesModule } from './files/files.module';
+import { AlbumsModule } from './albums/albums.module';
+import { GenresModule } from './genres/genres.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { FilesModule } from './files/files.module';
     MoviesModule,
     SongsModule,
     FilesModule,
+    AlbumsModule,
+    GenresModule,
   ],
   providers: [],
 })

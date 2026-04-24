@@ -6,8 +6,8 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
-import { Album } from './album.entity';
-import { Genre } from './genre.entity';
+import { Album } from '@/albums/entities/album.entity';
+import { Genre } from '@/genres/entities/genre.entity';
 import { Exclude, Expose } from 'class-transformer';
 
 @Entity('songs')

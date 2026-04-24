@@ -4,8 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Album } from './entities/album.entity';
 import { Repository } from 'typeorm';
+
+import { Album } from './entities/album.entity';
+import { CreateAlbumDto } from './dto/create-album.dto';
+import { UpdateAlbumDto } from './dto/update-album.dto';
 
 @Injectable()
 export class AlbumsService {
@@ -14,8 +17,8 @@ export class AlbumsService {
     private readonly albumRepository: Repository<Album>,
   ) {}
 
-  async create(description: string): Promise<Album> {
-    return this.albumRepository.save({ album: description });
+  async create(createAlbumDto: CreateAlbumDto): Promise<Album> {
+    return this.albumRepository.save({ album: createAlbumDto.description });
   }
 
   async findOne(id: string): Promise<Album> {
@@ -28,10 +31,10 @@ export class AlbumsService {
     return album;
   }
 
-  async update(id: string, description: string): Promise<Album> {
+  async update(id: string, updateAlbumDto: UpdateAlbumDto): Promise<Album> {
     const album = await this.findOne(id);
     const albumUpdated = this.albumRepository.merge(album, {
-      album: description,
+      album: updateAlbumDto.description,
     });
 
     const result = await this.albumRepository.update({ id }, albumUpdated);

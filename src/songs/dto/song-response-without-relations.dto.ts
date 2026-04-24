@@ -1,7 +1,7 @@
 import { Exclude, Expose } from 'class-transformer';
 
-import { Album } from '@/songs/entities/album.entity';
-import { Genre } from '@/songs/entities/genre.entity';
+import { Album } from '@/albums/entities/album.entity';
+import { Genre } from '@/genres/entities/genre.entity';
 
 @Exclude()
 export class SongResponseWithoutRelationsDto {

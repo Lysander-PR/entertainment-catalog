@@ -21,17 +21,18 @@ import { UpdateMovieDto } from './dto/update-movie.dto';
 import { Movie } from './entities/movie.entity';
 import { QueryFailedErrorFilter } from '@/common/filters/query-failed.filter';
 import { PaginationDto } from '@/common/dto/pagination.dto';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { StorageApiFilter } from '@/files/filters/storage-api.filter';
 
 @Controller('movies')
-@UseFilters(QueryFailedErrorFilter)
+@UseFilters(QueryFailedErrorFilter, StorageApiFilter)
 @UseInterceptors(ClassSerializerInterceptor)
 @SerializeOptions({ type: Movie })
 export class MoviesController {
   constructor(private readonly moviesService: MoviesService) {}
 
   @Post()
-  @UseInterceptors(FilesInterceptor('cover'))
+  @UseInterceptors(FileInterceptor('cover'))
   create(
     @Body() createMovieDto: CreateMovieDto,
     @UploadedFile() file?: Express.Multer.File,
@@ -50,7 +51,7 @@ export class MoviesController {
   }
 
   @Patch(':id')
-  @UseInterceptors(FilesInterceptor('cover'))
+  @UseInterceptors(FileInterceptor('cover'))
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateMovieDto: UpdateMovieDto,

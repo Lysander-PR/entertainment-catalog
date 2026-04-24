@@ -9,8 +9,8 @@ import { Response } from 'express';
 import { StorageApiError } from '@supabase/supabase-js';
 
 @Catch(StorageApiError)
-export class SupabaseApiFilter implements ExceptionFilter {
-  private readonly logger = new Logger(SupabaseApiFilter.name);
+export class StorageApiFilter implements ExceptionFilter {
+  private readonly logger = new Logger(StorageApiFilter.name);
 
   catch(exception: StorageApiError, host: ArgumentsHost) {
     const ctx = host.switchToHttp();

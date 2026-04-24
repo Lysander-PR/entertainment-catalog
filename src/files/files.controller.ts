@@ -18,11 +18,11 @@ import { FileInterceptor } from '@nestjs/platform-express';
 
 import { QueryFailedErrorFilter } from '@/common/filters/query-failed.filter';
 import { FilesService } from './files.service';
-import { SupabaseApiFilter } from './filters/supabase-api.filter';
+import { StorageApiFilter } from './filters/storage-api.filter';
 
 @Controller('files')
 // @UseInterceptors(ClassSerializerInterceptor)
-@UseFilters(QueryFailedErrorFilter, SupabaseApiFilter)
+@UseFilters(QueryFailedErrorFilter, StorageApiFilter)
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 

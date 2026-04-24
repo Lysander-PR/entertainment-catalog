@@ -2,9 +2,12 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Exclude, Expose } from 'class-transformer';
+import { Cover } from '@/files/entities/cover.entity';
 
 @Entity('books')
 @Exclude()
@@ -48,4 +51,12 @@ export class Book {
   })
   @Expose()
   createdAt: Date;
+
+  @Column('uuid', { name: 'cover_id', nullable: true })
+  coverId?: string;
+
+  @OneToOne(() => Cover, (cover) => cover.book, { cascade: true, eager: true })
+  @JoinColumn({ name: 'cover_id' })
+  @Expose()
+  cover?: Cover;
 }

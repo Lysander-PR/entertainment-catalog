@@ -1,8 +1,11 @@
+import { Cover } from '@/files/entities/cover.entity';
 import { Exclude, Expose } from 'class-transformer';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -56,4 +59,12 @@ export class Movie {
   })
   @Expose()
   createdAt: Date;
+
+  @Column('uuid', { name: 'poster_id', nullable: true })
+  posterId?: string;
+
+  @OneToOne(() => Cover, (cover) => cover.movie, { cascade: true, eager: true })
+  @JoinColumn({ name: 'poster_id' })
+  @Expose()
+  poster?: Cover;
 }

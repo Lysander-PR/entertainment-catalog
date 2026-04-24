@@ -3,12 +3,14 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
 import { Album } from '@/albums/entities/album.entity';
 import { Genre } from '@/genres/entities/genre.entity';
 import { Exclude, Expose } from 'class-transformer';
+import { Cover } from '@/files/entities/cover.entity';
 
 @Entity('songs')
 @Exclude()
@@ -65,4 +67,12 @@ export class Song {
   @JoinColumn({ name: 'genre_id' })
   @Expose()
   genre: Genre;
+
+  @Column('uuid', { name: 'cover_id', nullable: true })
+  coverId?: string;
+
+  @OneToOne(() => Cover, (cover) => cover.song, { cascade: true, eager: true })
+  @JoinColumn({ name: 'cover_id' })
+  @Expose()
+  cover?: Cover;
 }

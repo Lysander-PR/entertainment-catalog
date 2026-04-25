@@ -9,6 +9,8 @@ import { Repository } from 'typeorm';
 import { Genre } from './entities/genre.entity';
 import { CreateGenreDto } from './dto/create-genre.dto';
 import { UpdateGenreDto } from './dto/update-genre.dto';
+import { capitalize } from '@/common/helpers/capitalize.helper';
+import { PaginationDto } from '@/common/dto/pagination.dto';
 
 @Injectable()
 export class GenresService {
@@ -18,7 +20,16 @@ export class GenresService {
   ) {}
 
   async create(createGenreDto: CreateGenreDto): Promise<Genre> {
-    return this.genreRepository.save({ genre: createGenreDto.description });
+    return this.genreRepository.save({
+      genre: capitalize(createGenreDto.description),
+    });
+  }
+
+  find({ limit, page }: PaginationDto): Promise<Genre[]> {
+    return this.genreRepository.find({
+      take: limit,
+      skip: (page - 1) * limit,
+    });
   }
 
   async findOne(id: string): Promise<Genre> {
@@ -34,7 +45,9 @@ export class GenresService {
   async update(id: string, updateGenreDto: UpdateGenreDto): Promise<Genre> {
     const genre = await this.findOne(id);
     const genreUpdated = this.genreRepository.merge(genre, {
-      genre: updateGenreDto.description,
+      genre: updateGenreDto.description
+        ? capitalize(updateGenreDto.description)
+        : undefined,
     });
 
     const result = await this.genreRepository.update({ id }, genreUpdated);

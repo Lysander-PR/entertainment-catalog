@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseFilters,
 } from '@nestjs/common';
 
@@ -15,6 +16,7 @@ import { QueryFailedErrorFilter } from '@/common/filters/query-failed.filter';
 import { UpdateValuesMissingErrorFilter } from '@/common/filters/update-values-missing.error.filter';
 import { CreateGenreDto } from './dto/create-genre.dto';
 import { UpdateGenreDto } from './dto/update-genre.dto';
+import { PaginationDto } from '@/common/dto/pagination.dto';
 
 @Controller('genres')
 @UseFilters(QueryFailedErrorFilter, UpdateValuesMissingErrorFilter)
@@ -24,6 +26,11 @@ export class GenresController {
   @Post()
   create(@Body() createGenreDto: CreateGenreDto) {
     return this.genresService.create(createGenreDto);
+  }
+
+  @Get()
+  find(@Query() paginationDto: PaginationDto) {
+    return this.genresService.find(paginationDto);
   }
 
   @Get(':id')

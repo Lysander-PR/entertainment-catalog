@@ -23,9 +23,14 @@ import { QueryFailedErrorFilter } from '@/common/filters/query-failed.filter';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageApiFilter } from '@/files/filters/storage-api.filter';
+import { UpdateValuesMissingErrorFilter } from '@/common/filters/update-values-missing.error.filter';
 
 @Controller('movies')
-@UseFilters(QueryFailedErrorFilter, StorageApiFilter)
+@UseFilters(
+  QueryFailedErrorFilter,
+  UpdateValuesMissingErrorFilter,
+  StorageApiFilter,
+)
 @UseInterceptors(ClassSerializerInterceptor)
 @SerializeOptions({ type: Movie })
 export class MoviesController {

@@ -1,5 +1,6 @@
 import {
   IsDate,
+  IsOptional,
   IsString,
   IsUUID,
   MaxLength,
@@ -35,8 +36,11 @@ export class CreateSongDto {
   @IsString()
   @MinLength(1)
   @MaxLength(30)
-  @Transform(({ value }: { value: string }) => cleanInputString(value))
-  guestArtist: string;
+  @Transform(({ value }: { value: string | undefined }) =>
+    value ? cleanInputString(value) : undefined,
+  )
+  @IsOptional()
+  guestArtist?: string;
 
   @IsString()
   @MinLength(1)

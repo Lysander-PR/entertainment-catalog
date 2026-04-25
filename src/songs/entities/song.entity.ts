@@ -41,9 +41,9 @@ export class Song {
   @Expose()
   releaseDate: Date;
 
-  @Column('varchar', { name: 'guest_artist', length: 30 })
+  @Column('varchar', { name: 'guest_artist', length: 30, nullable: true })
   @Expose()
-  guestArtist: string;
+  guestArtist?: string;
 
   @Column('varchar', { name: 'title', length: 50 })
   @Expose()

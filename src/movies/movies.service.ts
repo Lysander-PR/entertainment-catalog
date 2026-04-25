@@ -1,5 +1,5 @@
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Not, Repository } from 'typeorm';
 import {
   ConflictException,
   Inject,
@@ -18,6 +18,8 @@ import {
 } from '@/common/interfaces/storage.interface';
 import { Cover } from '@/files/entities/cover.entity';
 import { BuildStoragePath } from './interfaces/build-storage-path';
+import { CheckDuplicatesParams } from './interfaces/check-duplicates-params';
+import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 
 @Injectable()
 export class MoviesService {
@@ -35,14 +37,14 @@ export class MoviesService {
     createMovieDto: CreateMovieDto,
     file?: Express.Multer.File,
   ): Promise<Movie> {
-    await this.checkDuplicates(
-      createMovieDto.title,
-      createMovieDto.director,
-      createMovieDto.studio,
-    );
+    await this.checkDuplicates({
+      title: createMovieDto.title,
+      director: createMovieDto.director,
+      studio: createMovieDto.studio,
+    });
 
     const uploadedPath = await this.handleUploadFile(
-      this.buildStoragePath({
+      this.storagePath({
         director: createMovieDto.director,
         studio: createMovieDto.studio,
         title: createMovieDto.title,
@@ -114,11 +116,11 @@ export class MoviesService {
       updateMovieDto.studio ||
       updateMovieDto.title
     ) {
-      await this.checkDuplicates(title, director, studio);
+      await this.checkDuplicates({ title, director, studio, id });
     }
 
     const uploadedPath = await this.handleUploadFile(
-      this.buildStoragePath({ director, studio, title }),
+      this.storagePath({ director, studio, title }),
       file,
     );
     const movieUpdated = this.movieRepository.merge(
@@ -171,20 +173,24 @@ export class MoviesService {
   private capitalizeMovie(likeMovie: Partial<Movie>): Partial<Movie> {
     return {
       ...likeMovie,
-      director: capitalize(likeMovie.director || '').trim(),
-      title: capitalize(likeMovie.title || '').trim(),
-      writer: capitalize(likeMovie.writer || '').trim(),
-      studio: capitalize(likeMovie.studio || '').trim(),
-      protagonist: capitalize(likeMovie.protagonist || '').trim(),
+      director: likeMovie.director ? capitalize(likeMovie.director) : undefined,
+      title: likeMovie.title ? capitalize(likeMovie.title) : undefined,
+      writer: likeMovie.writer ? capitalize(likeMovie.writer) : undefined,
+      studio: likeMovie.studio ? capitalize(likeMovie.studio) : undefined,
+      protagonist: likeMovie.protagonist
+        ? capitalize(likeMovie.protagonist)
+        : undefined,
     };
   }
 
-  private async checkDuplicates(
-    title: string,
-    director: string,
-    studio: string,
-  ): Promise<void> {
+  private async checkDuplicates({
+    id,
+    title,
+    director,
+    studio,
+  }: CheckDuplicatesParams): Promise<void> {
     const exist = await this.movieRepository.existsBy({
+      id: id ? Not(id) : undefined,
       director: capitalize(director),
       title: capitalize(title),
       studio: capitalize(studio),
@@ -197,14 +203,8 @@ export class MoviesService {
     }
   }
 
-  private buildStoragePath({
-    studio,
-    director,
-    title,
-  }: BuildStoragePath): string {
-    return `${this.storageFolder}/${studio}_${director}_${title}`
-      .toLowerCase()
-      .replaceAll(' ', '-');
+  private storagePath({ studio, director, title }: BuildStoragePath): string {
+    return buildStoragePath(this.storageFolder, studio, director, title);
   }
 
   private async handleUploadFile(

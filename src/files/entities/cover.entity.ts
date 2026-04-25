@@ -27,9 +27,6 @@ export class Cover {
   @Expose()
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at', default: () => 'CURRENT_TIMESTAMP' })
-  updatedAt: Date;
-
   @OneToOne(() => Book, (book) => book.cover)
   book: Book;
 

@@ -61,7 +61,6 @@ export class Movie {
   createdAt: Date;
 
   @Column('uuid', { name: 'poster_id', nullable: true })
-  @Expose()
   posterId?: string;
 
   @OneToOne(() => Cover, (cover) => cover.movie, { cascade: true, eager: true })

@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseFilters,
 } from '@nestjs/common';
 
@@ -15,6 +16,7 @@ import { QueryFailedErrorFilter } from '@/common/filters/query-failed.filter';
 import { UpdateValuesMissingErrorFilter } from '@/common/filters/update-values-missing.error.filter';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
+import { PaginationDto } from '@/common/dto/pagination.dto';
 
 @Controller('albums')
 @UseFilters(QueryFailedErrorFilter, UpdateValuesMissingErrorFilter)
@@ -24,6 +26,11 @@ export class AlbumsController {
   @Post()
   create(@Body() createAlbumDto: CreateAlbumDto) {
     return this.albumsService.create(createAlbumDto);
+  }
+
+  @Get()
+  find(@Query() paginationDto: PaginationDto) {
+    return this.albumsService.find(paginationDto);
   }
 
   @Get(':id')

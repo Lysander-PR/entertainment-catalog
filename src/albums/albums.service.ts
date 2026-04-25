@@ -9,6 +9,8 @@ import { Repository } from 'typeorm';
 import { Album } from './entities/album.entity';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
+import { capitalize } from '@/common/helpers/capitalize.helper';
+import { PaginationDto } from '@/common/dto/pagination.dto';
 
 @Injectable()
 export class AlbumsService {
@@ -18,7 +20,16 @@ export class AlbumsService {
   ) {}
 
   async create(createAlbumDto: CreateAlbumDto): Promise<Album> {
-    return this.albumRepository.save({ album: createAlbumDto.description });
+    return this.albumRepository.save({
+      album: capitalize(createAlbumDto.description),
+    });
+  }
+
+  async find({ limit, page }: PaginationDto): Promise<Album[]> {
+    return this.albumRepository.find({
+      take: limit,
+      skip: (page - 1) * limit,
+    });
   }
 
   async findOne(id: string): Promise<Album> {
@@ -34,7 +45,9 @@ export class AlbumsService {
   async update(id: string, updateAlbumDto: UpdateAlbumDto): Promise<Album> {
     const album = await this.findOne(id);
     const albumUpdated = this.albumRepository.merge(album, {
-      album: updateAlbumDto.description,
+      album: updateAlbumDto.description
+        ? capitalize(updateAlbumDto.description)
+        : undefined,
     });
 
     const result = await this.albumRepository.update({ id }, albumUpdated);
@@ -53,7 +66,7 @@ export class AlbumsService {
     const result = await this.albumRepository.delete({ id });
     if (result.affected === 0) {
       throw new InternalServerErrorException(
-        `Failed to remove genre with id ${id}`,
+        `Failed to remove album with id ${id}`,
       );
     }
 

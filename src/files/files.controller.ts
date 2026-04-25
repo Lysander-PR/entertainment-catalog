@@ -9,13 +9,12 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
-  Res,
   SerializeOptions,
+  StreamableFile,
   UploadedFile,
   UseFilters,
   UseInterceptors,
 } from '@nestjs/common';
-import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 import { FileValidationPipe } from './pipes/file-validation.pipe';
@@ -26,14 +25,13 @@ import { ALLOWED_ALL_MIME_TYPES } from './types/enums/mime-types.enum';
 import { Cover } from './entities/cover.entity';
 
 @Controller('files')
-@UseInterceptors(ClassSerializerInterceptor)
 @UseFilters(QueryFailedErrorFilter, StorageApiFilter)
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
   @Post('upload')
   @SerializeOptions({ type: Cover })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file'), ClassSerializerInterceptor)
   async uploadFile(
     @UploadedFile(
       new FileValidationPipe({ allowedMimeTypes: ALLOWED_ALL_MIME_TYPES }),
@@ -45,21 +43,23 @@ export class FilesController {
 
   @Delete(':id')
   @SerializeOptions({ type: Cover })
+  @UseInterceptors(ClassSerializerInterceptor)
   async removeFile(@Param('id', ParseUUIDPipe) id: string) {
     return this.filesService.remove(id);
   }
 
   @Get(':id')
-  async getFile(@Param('id', ParseUUIDPipe) id: string, @Res() res: Response) {
+  async getFile(@Param('id', ParseUUIDPipe) id: string) {
     const blob = await this.filesService.getFile(id);
     const buffer = Buffer.from(await blob.arrayBuffer());
-    res.setHeader('Content-Type', blob.type || 'application/octet-stream');
-    res.end(buffer);
+    return new StreamableFile(buffer, {
+      type: blob.type || 'application/octet-stream',
+    });
   }
 
   @Patch(':id')
   @SerializeOptions({ type: Cover })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file'), ClassSerializerInterceptor)
   async updateFile(
     @Param('id', ParseUUIDPipe) id: string,
     @UploadedFile(

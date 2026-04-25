@@ -2,7 +2,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Not, Repository } from 'typeorm';
 import {
   ConflictException,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -12,14 +11,11 @@ import { UpdateMovieDto } from './dto/update-movie.dto';
 import { Movie } from './entities/movie.entity';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
-import {
-  type IStorageService,
-  STORAGE_SERVICE,
-} from '@/common/interfaces/storage.interface';
 import { Cover } from '@/files/entities/cover.entity';
 import { BuildStoragePath } from './interfaces/build-storage-path';
 import { CheckDuplicatesParams } from './interfaces/check-duplicates-params';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
+import { CommonService } from '@/common/common.service';
 
 @Injectable()
 export class MoviesService {
@@ -28,8 +24,7 @@ export class MoviesService {
   constructor(
     @InjectRepository(Movie)
     private readonly movieRepository: Repository<Movie>,
-    @Inject(STORAGE_SERVICE)
-    private readonly storageService: IStorageService,
+    private readonly commonService: CommonService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -43,7 +38,7 @@ export class MoviesService {
       studio: createMovieDto.studio,
     });
 
-    const uploadedPath = await this.handleUploadFile(
+    const uploadedPath = await this.commonService.handleUploadFile(
       this.storagePath({
         director: createMovieDto.director,
         studio: createMovieDto.studio,
@@ -52,33 +47,25 @@ export class MoviesService {
       file,
     );
 
-    try {
-      return await this.dataSource.transaction(
-        'SERIALIZABLE',
-        async (manager) => {
-          const movie = manager.create(
-            Movie,
-            this.capitalizeMovie(createMovieDto),
-          );
+    return await this.commonService.handleTransactionWithFile(
+      uploadedPath,
+      this.dataSource.transaction('SERIALIZABLE', async (manager) => {
+        const movie = manager.create(
+          Movie,
+          this.capitalizeMovie(createMovieDto),
+        );
 
-          if (uploadedPath) {
-            const cover = await manager
-              .getRepository(Cover)
-              .save({ file: uploadedPath });
+        if (uploadedPath) {
+          const cover = await manager
+            .getRepository(Cover)
+            .save({ file: uploadedPath });
 
-            movie.posterId = cover.id;
-          }
+          movie.posterId = cover.id;
+        }
 
-          return await manager.save(movie);
-        },
-      );
-    } catch (error) {
-      if (uploadedPath) {
-        await this.storageService.remove(uploadedPath);
-      }
-
-      throw error;
-    }
+        return await manager.save(movie);
+      }),
+    );
   }
 
   findAll(paginationDto: PaginationDto): Promise<Movie[]> {
@@ -119,7 +106,7 @@ export class MoviesService {
       await this.checkDuplicates({ title, director, studio, id });
     }
 
-    const uploadedPath = await this.handleUploadFile(
+    const uploadedPath = await this.commonService.handleUploadFile(
       this.storagePath({ director, studio, title }),
       file,
     );
@@ -128,29 +115,21 @@ export class MoviesService {
       this.capitalizeMovie(updateMovieDto),
     );
 
-    try {
-      return await this.dataSource.transaction(
-        'SERIALIZABLE',
-        async (manager) => {
-          if (uploadedPath && !movie.posterId) {
-            const cover = await manager
-              .getRepository(Cover)
-              .save({ file: uploadedPath });
+    return await this.commonService.handleTransactionWithFile(
+      uploadedPath,
+      this.dataSource.transaction('SERIALIZABLE', async (manager) => {
+        if (uploadedPath && !movie.posterId) {
+          const cover = await manager
+            .getRepository(Cover)
+            .save({ file: uploadedPath });
 
-            movieUpdated.posterId = cover.id;
-          }
+          movieUpdated.posterId = cover.id;
+        }
 
-          await manager.update(Movie, { id }, movieUpdated);
-          return movieUpdated;
-        },
-      );
-    } catch (error) {
-      if (uploadedPath) {
-        await this.storageService.remove(uploadedPath);
-      }
-
-      throw error;
-    }
+        await manager.update(Movie, { id }, movieUpdated);
+        return movieUpdated;
+      }),
+    );
   }
 
   async remove(id: string): Promise<Movie> {
@@ -205,16 +184,5 @@ export class MoviesService {
 
   private storagePath({ studio, director, title }: BuildStoragePath): string {
     return buildStoragePath(this.storageFolder, studio, director, title);
-  }
-
-  private async handleUploadFile(
-    fileName: string,
-    file?: Express.Multer.File,
-  ): Promise<string | null> {
-    if (file) {
-      return this.storageService.upload(file, fileName);
-    }
-
-    return null;
   }
 }

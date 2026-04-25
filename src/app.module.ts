@@ -7,6 +7,7 @@ import { SongsModule } from './songs/songs.module';
 import { FilesModule } from './files/files.module';
 import { AlbumsModule } from './albums/albums.module';
 import { GenresModule } from './genres/genres.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { GenresModule } from './genres/genres.module';
     FilesModule,
     AlbumsModule,
     GenresModule,
+    CommonModule,
   ],
   providers: [],
 })

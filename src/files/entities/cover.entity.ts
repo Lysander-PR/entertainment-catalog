@@ -5,7 +5,6 @@ import {
   Entity,
   OneToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn,
 } from 'typeorm';
 
 import { Book } from '@/books/entities/book.entity';

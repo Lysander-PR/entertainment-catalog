@@ -1,6 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Multer } from 'multer';
 import {
+  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
@@ -9,6 +10,7 @@ import {
   Patch,
   Post,
   Res,
+  SerializeOptions,
   UploadedFile,
   UseFilters,
   UseInterceptors,
@@ -16,25 +18,33 @@ import {
 import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 
+import { FileValidationPipe } from './pipes/file-validation.pipe';
 import { QueryFailedErrorFilter } from '@/common/filters/query-failed.filter';
 import { FilesService } from './files.service';
 import { StorageApiFilter } from './filters/storage-api.filter';
+import { ALLOWED_ALL_MIME_TYPES } from './types/enums/mime-types.enum';
+import { Cover } from './entities/cover.entity';
 
 @Controller('files')
-// @UseInterceptors(ClassSerializerInterceptor)
+@UseInterceptors(ClassSerializerInterceptor)
 @UseFilters(QueryFailedErrorFilter, StorageApiFilter)
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
   @Post('upload')
+  @SerializeOptions({ type: Cover })
   @UseInterceptors(FileInterceptor('file'))
-  // @SerializeOptions({ type: Cover })
-  async uploadFile(@UploadedFile() file: Express.Multer.File) {
+  async uploadFile(
+    @UploadedFile(
+      new FileValidationPipe({ allowedMimeTypes: ALLOWED_ALL_MIME_TYPES }),
+    )
+    file: Express.Multer.File,
+  ) {
     return this.filesService.create(file);
   }
 
   @Delete(':id')
-  // @SerializeOptions({ type: Cover })
+  @SerializeOptions({ type: Cover })
   async removeFile(@Param('id', ParseUUIDPipe) id: string) {
     return this.filesService.remove(id);
   }
@@ -48,11 +58,14 @@ export class FilesController {
   }
 
   @Patch(':id')
-  // @SerializeOptions({ type: Cover })
+  @SerializeOptions({ type: Cover })
   @UseInterceptors(FileInterceptor('file'))
   async updateFile(
     @Param('id', ParseUUIDPipe) id: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(
+      new FileValidationPipe({ allowedMimeTypes: ALLOWED_ALL_MIME_TYPES }),
+    )
+    file: Express.Multer.File,
   ) {
     return this.filesService.update(id, file);
   }

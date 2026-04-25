@@ -69,6 +69,7 @@ export class Song {
   genre: Genre;
 
   @Column('uuid', { name: 'cover_id', nullable: true })
+  @Expose()
   coverId?: string;
 
   @OneToOne(() => Cover, (cover) => cover.song, { cascade: true, eager: true })

@@ -11,10 +11,10 @@ import { UpdateBookDto } from './dto/update-book.dto';
 import { Book } from './entities/book.entity';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
-import { CheckDuplicatesParams } from './interfaces/check-duplicates-params.interface';
+import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params.interface';
 import { CommonService } from '@/common/common.service';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
-import { BuildStoragePath } from './interfaces/build-storage-path';
+import { BuildStoragePath } from './types/interfaces/build-storage-path';
 import { Cover } from '@/files/entities/cover.entity';
 
 @Injectable()

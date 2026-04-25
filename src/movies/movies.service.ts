@@ -12,8 +12,8 @@ import { Movie } from './entities/movie.entity';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import { Cover } from '@/files/entities/cover.entity';
-import { BuildStoragePath } from './interfaces/build-storage-path';
-import { CheckDuplicatesParams } from './interfaces/check-duplicates-params';
+import { BuildStoragePath } from './types/interfaces/build-storage-path';
+import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { CommonService } from '@/common/common.service';
 

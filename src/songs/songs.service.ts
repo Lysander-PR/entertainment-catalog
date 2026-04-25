@@ -12,8 +12,8 @@ import { Song } from './entities/song.entity';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import { CommonService } from '@/common/common.service';
-import { CheckDuplicatesParams } from './interfaces/check-duplicates-params.interface';
-import { BuildStoragePath } from './interfaces/build-storage-path';
+import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params.interface';
+import { BuildStoragePath } from './types/interfaces/build-storage-path';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { Cover } from '@/files/entities/cover.entity';
 

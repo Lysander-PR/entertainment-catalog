@@ -53,6 +53,7 @@ export class Book {
   createdAt: Date;
 
   @Column('uuid', { name: 'cover_id', nullable: true })
+  @Expose()
   coverId?: string;
 
   @OneToOne(() => Cover, (cover) => cover.book, { cascade: true, eager: true })

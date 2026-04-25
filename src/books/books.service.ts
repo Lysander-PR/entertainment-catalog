@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { DataSource, Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { CreateBookDto } from './dto/create-book.dto';
@@ -11,20 +11,56 @@ import { UpdateBookDto } from './dto/update-book.dto';
 import { Book } from './entities/book.entity';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { CheckDuplicatesParams } from './interfaces/check-duplicates-params.interface';
+import { CommonService } from '@/common/common.service';
+import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
+import { BuildStoragePath } from './interfaces/build-storage-path';
+import { Cover } from '@/files/entities/cover.entity';
 
 @Injectable()
 export class BooksService {
+  private readonly storageFolder = 'books';
+
   constructor(
     @InjectRepository(Book)
     private readonly bookRepository: Repository<Book>,
+    private readonly commonService: CommonService,
+    private readonly dataSource: DataSource,
   ) {}
 
-  async create(createBookDto: CreateBookDto): Promise<Book> {
-    await this.checkDuplicate(createBookDto.title, createBookDto.author);
+  async create(
+    createBookDto: CreateBookDto,
+    file?: Express.Multer.File,
+  ): Promise<Book> {
+    await this.checkDuplicate({
+      title: createBookDto.title,
+      author: createBookDto.author,
+    });
 
-    const book = this.bookRepository.create(this.capitalizeBook(createBookDto));
+    const uploadedPath = await this.commonService.handleUploadFile(
+      this.storagePath({
+        title: createBookDto.title,
+        author: createBookDto.author,
+      }),
+      file,
+    );
 
-    return this.bookRepository.save(book);
+    return await this.commonService.handleTransactionWithFile(
+      uploadedPath,
+      this.dataSource.transaction('SERIALIZABLE', async (manager) => {
+        const book = manager.create(Book, this.capitalizeBook(createBookDto));
+
+        if (uploadedPath) {
+          const cover = await manager
+            .getRepository(Cover)
+            .save({ file: uploadedPath });
+
+          book.coverId = cover.id;
+        }
+
+        return await manager.save(book);
+      }),
+    );
   }
 
   findAll(paginationDto: PaginationDto): Promise<Book[]> {
@@ -45,21 +81,42 @@ export class BooksService {
     return book;
   }
 
-  async update(id: string, updateBookDto: UpdateBookDto): Promise<Book> {
+  async update(
+    id: string,
+    updateBookDto: UpdateBookDto,
+    file?: Express.Multer.File,
+  ): Promise<Book> {
     const book = await this.findOne(id);
+    const author = updateBookDto.author || book.author;
+    const title = updateBookDto.title || book.title;
 
     if (updateBookDto.author || updateBookDto.title) {
-      const author = updateBookDto.author || book.author;
-      const title = updateBookDto.title || book.title;
-      await this.checkDuplicate(title, author);
+      await this.checkDuplicate({ title, author, id });
     }
 
+    const uploadedPath = await this.commonService.handleUploadFile(
+      this.storagePath({ author, title }),
+      file,
+    );
     const bookUpdated = this.bookRepository.merge(
       book,
       this.capitalizeBook(updateBookDto),
     );
-    await this.bookRepository.update({ id }, bookUpdated);
-    return book;
+
+    return await this.commonService.handleTransactionWithFile(
+      uploadedPath,
+      this.dataSource.transaction('SERIALIZABLE', async (manager) => {
+        if (uploadedPath && !book.coverId) {
+          const cover = await manager
+            .getRepository(Cover)
+            .save({ file: uploadedPath });
+
+          bookUpdated.coverId = cover.id;
+        }
+
+        return await this.dataSource.manager.save(bookUpdated);
+      }),
+    );
   }
 
   async remove(id: string): Promise<Book> {
@@ -78,8 +135,13 @@ export class BooksService {
     return book;
   }
 
-  private async checkDuplicate(title: string, author: string): Promise<void> {
+  private async checkDuplicate({
+    id,
+    title,
+    author,
+  }: CheckDuplicatesParams): Promise<void> {
     const exist = await this.bookRepository.existsBy({
+      id: id ? Not(id) : undefined,
       title: capitalize(title),
       author: capitalize(author),
     });
@@ -94,10 +156,14 @@ export class BooksService {
   private capitalizeBook(book: Partial<Book>): Partial<Book> {
     return {
       ...book,
-      author: capitalize(book.author || ''),
-      title: capitalize(book.title || ''),
-      publisher: capitalize(book.publisher || ''),
+      author: book.author ? capitalize(book.author) : undefined,
+      title: book.title ? capitalize(book.title) : undefined,
+      publisher: book.publisher ? capitalize(book.publisher) : undefined,
       coWriter: book.coWriter ? capitalize(book.coWriter) : undefined,
     };
+  }
+
+  private storagePath({ author, title }: BuildStoragePath): string {
+    return buildStoragePath(this.storageFolder, author, title);
   }
 }

@@ -1,4 +1,3 @@
-import { Type } from 'class-transformer';
 import {
   IsDate,
   IsString,
@@ -7,20 +6,26 @@ import {
   MinLength,
 } from 'class-validator';
 
+import { cleanInputString } from '@/common/helpers/clean-input-string.helper';
+import { Transform, Type } from 'class-transformer';
+
 export class CreateSongDto {
   @IsString()
   @MinLength(1)
   @MaxLength(30)
+  @Transform(({ value }: { value: string }) => cleanInputString(value))
   artist: string;
 
   @IsString()
   @MinLength(1)
   @MaxLength(30)
+  @Transform(({ value }: { value: string }) => cleanInputString(value))
   composer: string;
 
   @IsString()
   @MinLength(1)
   @MaxLength(20)
+  @Transform(({ value }: { value: string }) => cleanInputString(value))
   studio: string;
 
   @IsDate()
@@ -30,11 +35,13 @@ export class CreateSongDto {
   @IsString()
   @MinLength(1)
   @MaxLength(30)
+  @Transform(({ value }: { value: string }) => cleanInputString(value))
   guestArtist: string;
 
   @IsString()
   @MinLength(1)
   @MaxLength(50)
+  @Transform(({ value }: { value: string }) => cleanInputString(value))
   title: string;
 
   @IsUUID()

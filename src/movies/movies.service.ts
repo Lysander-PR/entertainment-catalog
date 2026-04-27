@@ -16,7 +16,6 @@ import { BuildStoragePath } from './types/interfaces/build-storage-path';
 import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { CommonService } from '@/common/common.service';
-import { capitalizeMovie } from '@/common/helpers/capitalize-entity.helper';
 
 @Injectable()
 export class MoviesService {
@@ -51,7 +50,7 @@ export class MoviesService {
     return await this.commonService.handleTransactionWithFile(
       uploadedPath,
       this.dataSource.transaction('SERIALIZABLE', async (manager) => {
-        const movie = manager.create(Movie, capitalizeMovie(createMovieDto));
+        const movie = manager.create(Movie, createMovieDto);
 
         if (uploadedPath) {
           const cover = await manager
@@ -108,10 +107,7 @@ export class MoviesService {
       this.storagePath({ director, studio, title }),
       file,
     );
-    const movieUpdated = this.movieRepository.merge(
-      movie,
-      capitalizeMovie(updateMovieDto),
-    );
+    const movieUpdated = this.movieRepository.merge(movie, updateMovieDto);
 
     return await this.commonService.handleTransactionWithFile(
       uploadedPath,

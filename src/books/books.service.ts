@@ -16,7 +16,6 @@ import { CommonService } from '@/common/common.service';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { BuildStoragePath } from './types/interfaces/build-storage-path';
 import { Cover } from '@/files/entities/cover.entity';
-import { capitalizeBook } from '@/common/helpers/capitalize-entity.helper';
 
 @Injectable()
 export class BooksService {
@@ -49,7 +48,7 @@ export class BooksService {
     return await this.commonService.handleTransactionWithFile(
       uploadedPath,
       this.dataSource.transaction('SERIALIZABLE', async (manager) => {
-        const book = manager.create(Book, capitalizeBook(createBookDto));
+        const book = manager.create(Book, createBookDto);
 
         if (uploadedPath) {
           const cover = await manager
@@ -99,10 +98,7 @@ export class BooksService {
       this.storagePath({ author, title }),
       file,
     );
-    const bookUpdated = this.bookRepository.merge(
-      book,
-      capitalizeBook(updateBookDto),
-    );
+    const bookUpdated = this.bookRepository.merge(book, updateBookDto);
 
     return await this.commonService.handleTransactionWithFile(
       uploadedPath,

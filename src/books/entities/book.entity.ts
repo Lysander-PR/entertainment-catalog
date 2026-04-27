@@ -1,4 +1,6 @@
 import {
+  BeforeInsert,
+  BeforeUpdate,
   Column,
   CreateDateColumn,
   Entity,
@@ -8,6 +10,7 @@ import {
 } from 'typeorm';
 import { Exclude, Expose } from 'class-transformer';
 import { Cover } from '@/files/entities/cover.entity';
+import { capitalize } from '@/common/helpers/capitalize.helper';
 
 @Entity('books')
 @Exclude()
@@ -60,4 +63,13 @@ export class Book {
   @JoinColumn({ name: 'cover_id' })
   @Expose()
   cover?: Cover;
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  private normalize() {
+    if (this.author) this.author = capitalize(this.author);
+    if (this.title) this.title = capitalize(this.title);
+    if (this.publisher) this.publisher = capitalize(this.publisher);
+    if (this.coWriter) this.coWriter = capitalize(this.coWriter);
+  }
 }

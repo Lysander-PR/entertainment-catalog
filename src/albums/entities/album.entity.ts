@@ -1,4 +1,6 @@
 import {
+  BeforeInsert,
+  BeforeUpdate,
   Column,
   Entity,
   JoinColumn,
@@ -10,6 +12,7 @@ import {
 import { Song } from '@/songs/entities/song.entity';
 import { Exclude, Expose } from 'class-transformer';
 import { Cover } from '@/files/entities/cover.entity';
+import { capitalize } from '@/common/helpers/capitalize.helper';
 
 @Entity('albums')
 @Exclude()
@@ -55,4 +58,12 @@ export class Album {
   @JoinColumn({ name: 'cover_id' })
   @Expose()
   cover?: Cover;
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  private normalize() {
+    if (this.album) this.album = capitalize(this.album);
+    if (this.artist) this.artist = capitalize(this.artist);
+    if (this.studio) this.studio = capitalize(this.studio);
+  }
 }

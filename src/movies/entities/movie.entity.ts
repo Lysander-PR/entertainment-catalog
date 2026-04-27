@@ -1,6 +1,9 @@
+import { capitalize } from '@/common/helpers/capitalize.helper';
 import { Cover } from '@/files/entities/cover.entity';
 import { Exclude, Expose } from 'class-transformer';
 import {
+  BeforeInsert,
+  BeforeUpdate,
   Column,
   CreateDateColumn,
   Entity,
@@ -68,4 +71,14 @@ export class Movie {
   @JoinColumn({ name: 'poster_id' })
   @Expose()
   poster?: Cover;
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  private normalize() {
+    if (this.director) this.director = capitalize(this.director);
+    if (this.title) this.title = capitalize(this.title);
+    if (this.writer) this.writer = capitalize(this.writer);
+    if (this.studio) this.studio = capitalize(this.studio);
+    if (this.protagonist) this.protagonist = capitalize(this.protagonist);
+  }
 }

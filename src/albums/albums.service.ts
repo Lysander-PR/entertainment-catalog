@@ -18,10 +18,6 @@ import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { BuildStoragePath } from './types/interfaces/build-storage-path';
 import { Cover } from '@/files/entities/cover.entity';
 import { Song } from '@/songs/entities/song.entity';
-import {
-  capitalizeAlbum,
-  capitalizeSong,
-} from '@/common/helpers/capitalize-entity.helper';
 
 @Injectable()
 export class AlbumsService {
@@ -55,13 +51,10 @@ export class AlbumsService {
       uploadedPath,
       this.dataSource.transaction('SERIALIZABLE', async (manager) => {
         const songs = createAlbumDto.songs.map((song) =>
-          manager.create(Song, capitalizeSong(song)),
+          manager.create(Song, song),
         );
 
-        const album = manager.create(
-          Album,
-          capitalizeAlbum({ ...createAlbumDto, songs }),
-        );
+        const album = manager.create(Album, { ...createAlbumDto, songs });
 
         if (uploadedPath) {
           const cover = await manager
@@ -119,10 +112,10 @@ export class AlbumsService {
       this.storagePath({ album: description, artist }),
       file,
     );
-    const albumUpdated = this.albumRepository.merge(
-      album,
-      capitalizeAlbum({ ...updateAlbumDto, songs: album.songs }),
-    );
+    const albumUpdated = this.albumRepository.merge(album, {
+      ...updateAlbumDto,
+      songs: album.songs,
+    });
 
     return await this.commonService.handleTransactionWithFile(
       uploadedPath,

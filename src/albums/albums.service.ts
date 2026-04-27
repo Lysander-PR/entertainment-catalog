@@ -146,6 +146,25 @@ export class AlbumsService {
       );
     }
 
+    await this.dataSource
+      .getRepository(Song)
+      .update({ albumId: id }, { active: false });
+
+    return album;
+  }
+
+  async reactivate(id: string): Promise<Album> {
+    const album = await this.albumRepository.findOneBy({ id });
+
+    if (!album) {
+      throw new NotFoundException(`Album with id ${id} failed to reactivate`);
+    }
+
+    await this.albumRepository.update({ id }, { active: true });
+    await this.dataSource
+      .getRepository(Song)
+      .update({ albumId: id }, { active: true });
+
     return album;
   }
 

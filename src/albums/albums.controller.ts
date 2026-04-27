@@ -45,6 +45,11 @@ export class AlbumsController {
     return this.albumsService.create(createAlbumDto, file);
   }
 
+  @Post('reactivate')
+  reactivate(@Body('id', ParseUUIDPipe) id: string) {
+    return this.albumsService.reactivate(id);
+  }
+
   @Get()
   find(@Query() paginationDto: PaginationDto) {
     return this.albumsService.find(paginationDto);

@@ -144,7 +144,7 @@ export class AlbumsService {
   async remove(id: string): Promise<Album> {
     const album = await this.findOne(id);
 
-    const result = await this.albumRepository.delete({ id });
+    const result = await this.albumRepository.update({ id }, { active: false });
     if (result.affected === 0) {
       throw new InternalServerErrorException(
         `Failed to remove album with id ${id}`,

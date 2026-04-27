@@ -1,4 +1,6 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { CreateAlbumDto } from './create-album.dto';
 
-export class UpdateAlbumDto extends PartialType(CreateAlbumDto) {}
+export class UpdateAlbumDto extends PartialType(
+  OmitType(CreateAlbumDto, ['songs'] as const),
+) {}

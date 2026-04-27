@@ -50,10 +50,7 @@ export class AlbumsService {
     return await this.commonService.handleTransactionWithFile(
       uploadedPath,
       this.dataSource.transaction('SERIALIZABLE', async (manager) => {
-        const songs = createAlbumDto.songs.map((song) =>
-          manager.create(Song, song),
-        );
-
+        const songs = manager.create(Song, createAlbumDto.songs);
         const album = manager.create(Album, { ...createAlbumDto, songs });
 
         if (uploadedPath) {
@@ -65,11 +62,11 @@ export class AlbumsService {
         }
 
         const albumSaved = await manager.save(album);
-        await manager.getRepository(Song).save(
-          songs.map((song) => ({
-            ...song,
-            albumId: albumSaved.id,
-          })),
+        albumSaved.songs = await manager.getRepository(Song).save(
+          songs.map((song) => {
+            song.albumId = albumSaved.id;
+            return song;
+          }),
         );
 
         return albumSaved;

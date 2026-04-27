@@ -1,5 +1,7 @@
 import { cleanInputString } from '@/common/helpers/clean-input-string.helper';
-import { Transform, Type } from 'class-transformer';
+import { CreateSongDto } from '@/songs/dto/create-song.dto';
+import { OmitType } from '@nestjs/mapped-types';
+import { plainToInstance, Transform, Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
@@ -7,7 +9,12 @@ import {
   IsString,
   MaxLength,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
+
+class CreateSongByAlbumDto extends OmitType(CreateSongDto, [
+  'albumId',
+] as const) {}
 
 export class CreateAlbumDto {
   @IsString()
@@ -34,17 +41,11 @@ export class CreateAlbumDto {
 
   @IsArray()
   @ArrayMinSize(1)
-  @IsString({ each: true })
-  @MinLength(1, { each: true })
-  @MaxLength(50, { each: true })
-  @Transform(({ value }) => {
-    if (typeof value === 'string') {
-      return [cleanInputString(value)];
-    }
-
-    return Array.isArray(value)
-      ? value.map(cleanInputString)
-      : [cleanInputString(value)];
+  @ValidateNested({ each: true })
+  @Type(() => CreateSongByAlbumDto)
+  @Transform(({ value }: { value: string | CreateSongByAlbumDto[] }) => {
+    const arr = typeof value === 'string' ? JSON.parse(value) : value;
+    return plainToInstance(CreateSongByAlbumDto, arr);
   })
-  songs: string[];
+  songs: CreateSongByAlbumDto[];
 }

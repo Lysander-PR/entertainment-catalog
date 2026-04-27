@@ -16,6 +16,7 @@ import { BuildStoragePath } from './types/interfaces/build-storage-path';
 import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { CommonService } from '@/common/common.service';
+import { capitalizeMovie } from '@/common/helpers/capitalize-entity.helper';
 
 @Injectable()
 export class MoviesService {
@@ -50,10 +51,7 @@ export class MoviesService {
     return await this.commonService.handleTransactionWithFile(
       uploadedPath,
       this.dataSource.transaction('SERIALIZABLE', async (manager) => {
-        const movie = manager.create(
-          Movie,
-          this.capitalizeMovie(createMovieDto),
-        );
+        const movie = manager.create(Movie, capitalizeMovie(createMovieDto));
 
         if (uploadedPath) {
           const cover = await manager
@@ -112,7 +110,7 @@ export class MoviesService {
     );
     const movieUpdated = this.movieRepository.merge(
       movie,
-      this.capitalizeMovie(updateMovieDto),
+      capitalizeMovie(updateMovieDto),
     );
 
     return await this.commonService.handleTransactionWithFile(
@@ -147,19 +145,6 @@ export class MoviesService {
 
     await this.movieRepository.update({ id }, { active: true });
     return movie;
-  }
-
-  private capitalizeMovie(likeMovie: Partial<Movie>): Partial<Movie> {
-    return {
-      ...likeMovie,
-      director: likeMovie.director ? capitalize(likeMovie.director) : undefined,
-      title: likeMovie.title ? capitalize(likeMovie.title) : undefined,
-      writer: likeMovie.writer ? capitalize(likeMovie.writer) : undefined,
-      studio: likeMovie.studio ? capitalize(likeMovie.studio) : undefined,
-      protagonist: likeMovie.protagonist
-        ? capitalize(likeMovie.protagonist)
-        : undefined,
-    };
   }
 
   private async checkDuplicates({

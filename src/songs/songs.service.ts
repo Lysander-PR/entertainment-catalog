@@ -13,6 +13,7 @@ import { Song } from './entities/song.entity';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params.interface';
+import { capitalizeSong } from '@/common/helpers/capitalize-entity.helper';
 
 @Injectable()
 export class SongsService {
@@ -27,7 +28,7 @@ export class SongsService {
       title: createSongDto.title,
     });
 
-    return this.songRepository.save(this.capitalizeSong(createSongDto));
+    return this.songRepository.save(capitalizeSong(createSongDto));
   }
 
   findAll({ limit, page }: PaginationDto): Promise<Song[]> {
@@ -63,7 +64,7 @@ export class SongsService {
 
     const songUpdated = this.songRepository.merge(
       song,
-      this.capitalizeSong(updateSongDto),
+      capitalizeSong(updateSongDto),
     );
 
     const result = await this.songRepository.update({ id }, songUpdated);
@@ -91,17 +92,6 @@ export class SongsService {
 
     await this.songRepository.update({ id }, { active: true });
     return song;
-  }
-
-  private capitalizeSong(songLike: Partial<Song>): Partial<Song> {
-    return {
-      ...songLike,
-      composer: songLike.composer ? capitalize(songLike.composer) : undefined,
-      title: songLike.title ? capitalize(songLike.title) : undefined,
-      guestArtist: songLike.guestArtist
-        ? capitalize(songLike.guestArtist)
-        : undefined,
-    };
   }
 
   private async checkDuplicates({

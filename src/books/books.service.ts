@@ -16,6 +16,7 @@ import { CommonService } from '@/common/common.service';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { BuildStoragePath } from './types/interfaces/build-storage-path';
 import { Cover } from '@/files/entities/cover.entity';
+import { capitalizeBook } from '@/common/helpers/capitalize-entity.helper';
 
 @Injectable()
 export class BooksService {
@@ -48,7 +49,7 @@ export class BooksService {
     return await this.commonService.handleTransactionWithFile(
       uploadedPath,
       this.dataSource.transaction('SERIALIZABLE', async (manager) => {
-        const book = manager.create(Book, this.capitalizeBook(createBookDto));
+        const book = manager.create(Book, capitalizeBook(createBookDto));
 
         if (uploadedPath) {
           const cover = await manager
@@ -100,7 +101,7 @@ export class BooksService {
     );
     const bookUpdated = this.bookRepository.merge(
       book,
-      this.capitalizeBook(updateBookDto),
+      capitalizeBook(updateBookDto),
     );
 
     return await this.commonService.handleTransactionWithFile(
@@ -151,16 +152,6 @@ export class BooksService {
         `Book with title "${title}" and author "${author}" already exists`,
       );
     }
-  }
-
-  private capitalizeBook(book: Partial<Book>): Partial<Book> {
-    return {
-      ...book,
-      author: book.author ? capitalize(book.author) : undefined,
-      title: book.title ? capitalize(book.title) : undefined,
-      publisher: book.publisher ? capitalize(book.publisher) : undefined,
-      coWriter: book.coWriter ? capitalize(book.coWriter) : undefined,
-    };
   }
 
   private storagePath({ author, title }: BuildStoragePath): string {

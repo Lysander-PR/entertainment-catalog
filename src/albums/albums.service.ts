@@ -18,6 +18,10 @@ import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { BuildStoragePath } from './types/interfaces/build-storage-path';
 import { Cover } from '@/files/entities/cover.entity';
 import { Song } from '@/songs/entities/song.entity';
+import {
+  capitalizeAlbum,
+  capitalizeSong,
+} from '@/common/helpers/capitalize-entity.helper';
 
 @Injectable()
 export class AlbumsService {
@@ -51,12 +55,12 @@ export class AlbumsService {
       uploadedPath,
       this.dataSource.transaction('SERIALIZABLE', async (manager) => {
         const songs = createAlbumDto.songs.map((song) =>
-          manager.create(Song, { title: song }),
+          manager.create(Song, capitalizeSong(song)),
         );
 
         const album = manager.create(
           Album,
-          this.capitalizeAlbum({ ...createAlbumDto, songs }),
+          capitalizeAlbum({ ...createAlbumDto, songs }),
         );
 
         if (uploadedPath) {
@@ -117,7 +121,7 @@ export class AlbumsService {
     );
     const albumUpdated = this.albumRepository.merge(
       album,
-      this.capitalizeAlbum({ ...updateAlbumDto, songs: album.songs }),
+      capitalizeAlbum({ ...updateAlbumDto, songs: album.songs }),
     );
 
     return await this.commonService.handleTransactionWithFile(
@@ -168,15 +172,6 @@ export class AlbumsService {
     return album;
   }
 
-  private capitalizeAlbum(likeAlbum: Partial<Album>): Partial<Album> {
-    return {
-      ...likeAlbum,
-      album: likeAlbum.album ? capitalize(likeAlbum.album) : undefined,
-      studio: likeAlbum.studio ? capitalize(likeAlbum.studio) : undefined,
-      artist: likeAlbum.artist ? capitalize(likeAlbum.artist) : undefined,
-    };
-  }
-
   private async checkDuplicates({
     id,
     album,
@@ -184,8 +179,8 @@ export class AlbumsService {
   }: CheckDuplicatesParams): Promise<void> {
     const existBy = await this.albumRepository.existsBy({
       id: id ? Not(id) : undefined,
-      album,
-      artist,
+      album: capitalize(album),
+      artist: capitalize(artist),
     });
 
     if (existBy) {

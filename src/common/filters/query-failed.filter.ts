@@ -7,6 +7,7 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { QueryFailedError } from 'typeorm';
 
@@ -52,6 +53,8 @@ export class QueryFailedErrorFilter implements ExceptionFilter {
       case '23003':
       case '23514':
         throw new BadRequestException(driverError.detail);
+      case '23502':
+        throw new UnprocessableEntityException(driverError.detail);
       default:
         break;
     }

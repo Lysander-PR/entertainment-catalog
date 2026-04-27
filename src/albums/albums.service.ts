@@ -51,12 +51,7 @@ export class AlbumsService {
       uploadedPath,
       this.dataSource.transaction('SERIALIZABLE', async (manager) => {
         const songs = createAlbumDto.songs.map((song) =>
-          manager.create(Song, {
-            title: song,
-            composer: '',
-            albumId: '',
-            genreId: 'de11bfb6-4331-4968-a7df-ebe2262bd43f',
-          }),
+          manager.create(Song, { title: song }),
         );
 
         const album = manager.create(

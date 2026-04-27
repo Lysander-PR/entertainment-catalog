@@ -17,7 +17,7 @@ export class Song {
   @Expose()
   id: string;
 
-  @Column('varchar', { name: 'composer', length: 30 })
+  @Column('varchar', { name: 'composer', length: 30, default: '' })
   @Expose()
   composer: string;
 
@@ -35,8 +35,8 @@ export class Song {
   @Column('uuid', { name: 'album_id', nullable: false })
   albumId: string;
 
-  @Column('uuid', { name: 'genre_id', nullable: false })
-  genreId: string;
+  @Column('uuid', { name: 'genre_id', nullable: true })
+  genreId?: string;
 
   @ManyToOne(() => Album, (album) => album.songs)
   @JoinColumn({ name: 'album_id' })
@@ -46,5 +46,5 @@ export class Song {
   @ManyToOne(() => Genre, (genre) => genre.songs)
   @JoinColumn({ name: 'genre_id' })
   @Expose()
-  genre: Genre;
+  genre?: Genre;
 }

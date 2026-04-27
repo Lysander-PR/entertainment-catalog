@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ArgumentMetadata,
 } from '@nestjs/common';
+import { MimeTypes } from '@/files/types/enums/mime-types.enum';
 
 export interface FileValidationOptions {
   maxSize?: number; // bytes
@@ -19,10 +20,10 @@ export class FileValidationPipe implements PipeTransform {
     this.options = {
       maxSize: options.maxSize || this.MAX_SIZE_MB_DEFAULT * 1024 * 1024,
       allowedMimeTypes: options.allowedMimeTypes || [
-        'image/jpeg',
-        'image/png',
-        'image/webp',
-        'image/gif',
+        MimeTypes.JPEG,
+        MimeTypes.PNG,
+        MimeTypes.WEBP,
+        MimeTypes.GIF,
       ],
       required: options.required ?? true,
     };

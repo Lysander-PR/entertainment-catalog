@@ -1,5 +1,5 @@
 export interface CheckDuplicatesParams {
   id?: string;
-  title: string;
-  albumId: string;
+  album: string;
+  artist: string;
 }

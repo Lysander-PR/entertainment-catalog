@@ -1,5 +1,4 @@
 import {
-  IsDate,
   IsOptional,
   IsString,
   IsUUID,
@@ -8,30 +7,14 @@ import {
 } from 'class-validator';
 
 import { cleanInputString } from '@/common/helpers/clean-input-string.helper';
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 
 export class CreateSongDto {
   @IsString()
   @MinLength(1)
   @MaxLength(30)
   @Transform(({ value }: { value: string }) => cleanInputString(value))
-  artist: string;
-
-  @IsString()
-  @MinLength(1)
-  @MaxLength(30)
-  @Transform(({ value }: { value: string }) => cleanInputString(value))
   composer: string;
-
-  @IsString()
-  @MinLength(1)
-  @MaxLength(20)
-  @Transform(({ value }: { value: string }) => cleanInputString(value))
-  studio: string;
-
-  @IsDate()
-  @Type(() => Date)
-  releaseDate: Date;
 
   @IsString()
   @MinLength(1)

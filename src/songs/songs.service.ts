@@ -1,66 +1,33 @@
 import {
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Not, Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 
 import { CreateSongDto } from './dto/create-song.dto';
 import { UpdateSongDto } from './dto/update-song.dto';
 import { Song } from './entities/song.entity';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
-import { CommonService } from '@/common/common.service';
 import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params.interface';
-import { BuildStoragePath } from './types/interfaces/build-storage-path';
-import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
-import { Cover } from '@/files/entities/cover.entity';
 
 @Injectable()
 export class SongsService {
-  private readonly storageFolder = 'songs';
-
   constructor(
     @InjectRepository(Song)
     private readonly songRepository: Repository<Song>,
-    private readonly commonService: CommonService,
-    private readonly dataSource: DataSource,
   ) {}
 
-  async create(
-    createSongDto: CreateSongDto,
-    file?: Express.Multer.File,
-  ): Promise<Song> {
+  async create(createSongDto: CreateSongDto): Promise<Song> {
     await this.checkDuplicates({
-      artist: createSongDto.artist,
+      albumId: createSongDto.albumId,
       title: createSongDto.title,
     });
 
-    const uploadedPath = await this.commonService.handleUploadFile(
-      this.storagePath({
-        title: createSongDto.title,
-        artist: createSongDto.artist,
-      }),
-      file,
-    );
-
-    return await this.commonService.handleTransactionWithFile(
-      uploadedPath,
-      this.dataSource.transaction('SERIALIZABLE', async (manager) => {
-        const song = manager.create(Song, this.capitalizeSong(createSongDto));
-
-        if (uploadedPath) {
-          const cover = await manager
-            .getRepository(Cover)
-            .save({ file: uploadedPath });
-
-          song.coverId = cover.id;
-        }
-
-        return await manager.save(song);
-      }),
-    );
+    return this.songRepository.save(this.capitalizeSong(createSongDto));
   }
 
   findAll({ limit, page }: PaginationDto): Promise<Song[]> {
@@ -85,42 +52,28 @@ export class SongsService {
     return song;
   }
 
-  async update(
-    id: string,
-    updateSongDto: UpdateSongDto,
-    file?: Express.Multer.File,
-  ): Promise<Song> {
+  async update(id: string, updateSongDto: UpdateSongDto): Promise<Song> {
     const song = await this.findOne(id);
-    const artist = updateSongDto.artist || song.artist;
+    const albumId = updateSongDto.albumId || song.albumId;
     const title = updateSongDto.title || song.title;
 
-    if (updateSongDto.artist || updateSongDto.title) {
-      await this.checkDuplicates({ id, artist, title });
+    if (updateSongDto.albumId || updateSongDto.title) {
+      await this.checkDuplicates({ id, albumId, title });
     }
 
-    const uploadedPath = await this.commonService.handleUploadFile(
-      this.storagePath({ title, artist }),
-      file,
-    );
     const songUpdated = this.songRepository.merge(
       song,
       this.capitalizeSong(updateSongDto),
     );
 
-    return await this.commonService.handleTransactionWithFile(
-      uploadedPath,
-      this.dataSource.transaction('SERIALIZABLE', async (manager) => {
-        if (uploadedPath && !song.coverId) {
-          const cover = await manager
-            .getRepository(Cover)
-            .save({ file: uploadedPath });
+    const result = await this.songRepository.update({ id }, songUpdated);
+    if (result.affected === 0) {
+      throw new InternalServerErrorException(
+        `Failed to update song with id ${id}`,
+      );
+    }
 
-          songUpdated.coverId = cover.id;
-        }
-
-        return await manager.save(songUpdated);
-      }),
-    );
+    return songUpdated;
   }
 
   async remove(id: string): Promise<Song> {
@@ -143,9 +96,7 @@ export class SongsService {
   private capitalizeSong(songLike: Partial<Song>): Partial<Song> {
     return {
       ...songLike,
-      artist: songLike.artist ? capitalize(songLike.artist) : undefined,
       composer: songLike.composer ? capitalize(songLike.composer) : undefined,
-      studio: songLike.studio ? capitalize(songLike.studio) : undefined,
       title: songLike.title ? capitalize(songLike.title) : undefined,
       guestArtist: songLike.guestArtist
         ? capitalize(songLike.guestArtist)
@@ -155,23 +106,19 @@ export class SongsService {
 
   private async checkDuplicates({
     id,
-    artist,
+    albumId,
     title,
   }: CheckDuplicatesParams): Promise<void> {
     const exist = await this.songRepository.findOneBy({
       id: id ? Not(id) : undefined,
-      artist: capitalize(artist),
+      albumId,
       title: capitalize(title),
     });
 
     if (exist) {
       throw new ConflictException(
-        `Song with title ${title} and artist ${artist} already exists`,
+        `Song with title ${title} already exists in the album with id ${albumId}`,
       );
     }
-  }
-
-  private storagePath({ artist, title }: BuildStoragePath) {
-    return buildStoragePath(this.storageFolder, artist, title);
   }
 }

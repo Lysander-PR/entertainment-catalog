@@ -1,5 +1,6 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
@@ -8,8 +9,12 @@ import {
   Patch,
   Post,
   Query,
+  SerializeOptions,
+  UploadedFile,
   UseFilters,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import { AlbumsService } from './albums.service';
 import { QueryFailedErrorFilter } from '@/common/filters/query-failed.filter';
@@ -17,15 +22,27 @@ import { UpdateValuesMissingErrorFilter } from '@/common/filters/update-values-m
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { StorageApiFilter } from '@/files/filters/storage-api.filter';
+import { Album } from './entities/album.entity';
 
 @Controller('albums')
-@UseFilters(QueryFailedErrorFilter, UpdateValuesMissingErrorFilter)
+@UseFilters(
+  QueryFailedErrorFilter,
+  UpdateValuesMissingErrorFilter,
+  StorageApiFilter,
+)
+@UseInterceptors(ClassSerializerInterceptor)
+@SerializeOptions({ type: Album })
 export class AlbumsController {
   constructor(private readonly albumsService: AlbumsService) {}
 
   @Post()
-  create(@Body() createAlbumDto: CreateAlbumDto) {
-    return this.albumsService.create(createAlbumDto);
+  @UseInterceptors(FileInterceptor('cover'))
+  create(
+    @Body() createAlbumDto: CreateAlbumDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.albumsService.create(createAlbumDto, file);
   }
 
   @Get()
@@ -39,11 +56,13 @@ export class AlbumsController {
   }
 
   @Patch(':id')
+  @UseInterceptors(FileInterceptor('cover'))
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateAlbumDto: UpdateAlbumDto,
+    @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.albumsService.update(id, updateAlbumDto);
+    return this.albumsService.update(id, updateAlbumDto, file);
   }
 
   @Delete(':id')

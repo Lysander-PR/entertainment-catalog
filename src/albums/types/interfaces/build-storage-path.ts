@@ -1,4 +1,4 @@
 export interface BuildStoragePath {
-  title: string;
+  album: string;
   artist: string;
 }

@@ -8,8 +8,8 @@ import {
 } from 'typeorm';
 
 import { Book } from '@/books/entities/book.entity';
-import { Song } from '@/songs/entities/song.entity';
 import { Movie } from '@/movies/entities/movie.entity';
+import { Album } from '@/albums/entities/album.entity';
 
 @Entity('covers')
 @Exclude()
@@ -29,8 +29,8 @@ export class Cover {
   @OneToOne(() => Book, (book) => book.cover)
   book: Book;
 
-  @OneToOne(() => Song, (song) => song.cover)
-  song: Song;
+  @OneToOne(() => Album, (album) => album.cover)
+  album: Album;
 
   @OneToOne(() => Movie, (movie) => movie.poster)
   movie: Movie;

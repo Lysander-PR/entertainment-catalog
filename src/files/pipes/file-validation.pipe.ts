@@ -33,9 +33,13 @@ export class FileValidationPipe implements PipeTransform {
     file: Express.Multer.File,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _metadata: ArgumentMetadata,
-  ): Express.Multer.File {
+  ): Express.Multer.File | undefined {
     if (!file && this.options.required) {
       throw new BadRequestException('File is required');
+    }
+
+    if (!file && !this.options.required) {
+      return undefined;
     }
 
     if (file.size > this.options.maxSize!) {

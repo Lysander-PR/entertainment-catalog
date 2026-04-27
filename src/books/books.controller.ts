@@ -24,6 +24,8 @@ import { PaginationDto } from '@/common/dto/pagination.dto';
 import { UpdateValuesMissingErrorFilter } from '@/common/filters/update-values-missing.error.filter';
 import { StorageApiFilter } from '@/files/filters/storage-api.filter';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { FileValidationPipe } from '@/files/pipes/file-validation.pipe';
+import { MimeTypes } from '@/files/types/enums/mime-types.enum';
 
 @Controller('books')
 @UseFilters(
@@ -40,7 +42,13 @@ export class BooksController {
   @UseInterceptors(FileInterceptor('cover'))
   create(
     @Body() createBookDto: CreateBookDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile(
+      new FileValidationPipe({
+        allowedMimeTypes: [MimeTypes.JPEG],
+        required: false,
+      }),
+    )
+    file?: Express.Multer.File,
   ) {
     return this.booksService.create(createBookDto, file);
   }
@@ -60,7 +68,13 @@ export class BooksController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateBookDto: UpdateBookDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile(
+      new FileValidationPipe({
+        allowedMimeTypes: [MimeTypes.JPEG],
+        required: false,
+      }),
+    )
+    file?: Express.Multer.File,
   ) {
     return this.booksService.update(id, updateBookDto, file);
   }

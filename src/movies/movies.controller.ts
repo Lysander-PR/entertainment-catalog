@@ -24,6 +24,7 @@ import { PaginationDto } from '@/common/dto/pagination.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageApiFilter } from '@/files/filters/storage-api.filter';
 import { UpdateValuesMissingErrorFilter } from '@/common/filters/update-values-missing.error.filter';
+import { FileValidationPipe } from '@/files/pipes/file-validation.pipe';
 
 @Controller('movies')
 @UseFilters(
@@ -40,7 +41,8 @@ export class MoviesController {
   @UseInterceptors(FileInterceptor('cover'))
   create(
     @Body() createMovieDto: CreateMovieDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile(new FileValidationPipe({ required: false }))
+    file?: Express.Multer.File,
   ) {
     return this.moviesService.create(createMovieDto, file);
   }
@@ -60,7 +62,8 @@ export class MoviesController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateMovieDto: UpdateMovieDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile(new FileValidationPipe({ required: false }))
+    file?: Express.Multer.File,
   ) {
     return this.moviesService.update(id, updateMovieDto, file);
   }

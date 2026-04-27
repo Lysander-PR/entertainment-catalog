@@ -24,6 +24,8 @@ import { UpdateAlbumDto } from './dto/update-album.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import { StorageApiFilter } from '@/files/filters/storage-api.filter';
 import { Album } from './entities/album.entity';
+import { FileValidationPipe } from '@/files/pipes/file-validation.pipe';
+import { MimeTypes } from '@/files/types/enums/mime-types.enum';
 
 @Controller('albums')
 @UseFilters(
@@ -40,7 +42,13 @@ export class AlbumsController {
   @UseInterceptors(FileInterceptor('cover'))
   create(
     @Body() createAlbumDto: CreateAlbumDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile(
+      new FileValidationPipe({
+        allowedMimeTypes: [MimeTypes.JPEG, MimeTypes.PNG],
+        required: false,
+      }),
+    )
+    file?: Express.Multer.File,
   ) {
     return this.albumsService.create(createAlbumDto, file);
   }
@@ -65,7 +73,13 @@ export class AlbumsController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateAlbumDto: UpdateAlbumDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile(
+      new FileValidationPipe({
+        allowedMimeTypes: [MimeTypes.JPEG, MimeTypes.PNG],
+        required: false,
+      }),
+    )
+    file?: Express.Multer.File,
   ) {
     return this.albumsService.update(id, updateAlbumDto, file);
   }

@@ -1,6 +1,14 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  BeforeInsert,
+  BeforeUpdate,
+  Column,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 import { Song } from '@/songs/entities/song.entity';
+import { capitalize } from '@/common/helpers/capitalize.helper';
 
 @Entity('genres')
 export class Genre {
@@ -12,4 +20,10 @@ export class Genre {
 
   @OneToMany(() => Song, (song) => song.genre)
   songs: Song[];
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  private normalize() {
+    if (this.genre) this.genre = capitalize(this.genre);
+  }
 }

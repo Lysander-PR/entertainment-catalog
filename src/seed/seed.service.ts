@@ -20,16 +20,14 @@ export class SeedService {
     const { albums, books, genres, movies } = initialData;
 
     await this.dataService.transaction('SERIALIZABLE', async (manager) => {
-      const moviesEntity = manager.create(Movie, movies);
-      const booksEntity = manager.create(Book, books);
-      const genresEntity = manager.create(
-        Genre,
-        genres.map((genre) => ({ genre })),
+      await manager.save(manager.create(Movie, movies));
+      await manager.save(manager.create(Book, books));
+      const genresDB = await manager.save(
+        manager.create(
+          Genre,
+          genres.map((genre) => ({ genre })),
+        ),
       );
-
-      await manager.save(moviesEntity);
-      await manager.save(booksEntity);
-      const genresDB = await manager.save(genresEntity);
     });
 
     return 'SEED EXECUTED';

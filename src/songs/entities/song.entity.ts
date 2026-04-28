@@ -38,8 +38,8 @@ export class Song {
   @Column('uuid', { name: 'album_id', nullable: false })
   albumId: string;
 
-  @Column('uuid', { name: 'genre_id', nullable: true })
-  genreId?: string;
+  @Column('uuid', { name: 'genre_id', nullable: false })
+  genreId: string;
 
   @ManyToOne(() => Album, (album) => album.songs)
   @JoinColumn({ name: 'album_id' })
@@ -49,7 +49,7 @@ export class Song {
   @ManyToOne(() => Genre, (genre) => genre.songs)
   @JoinColumn({ name: 'genre_id' })
   @Expose()
-  genre?: Genre;
+  genre: Genre;
 
   @BeforeInsert()
   @BeforeUpdate()

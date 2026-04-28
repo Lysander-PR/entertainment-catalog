@@ -11,6 +11,7 @@ interface SeedAlbum {
   studio: string;
   artist: string;
   songs: SeedSong[];
+  coverUrl?: string;
 }
 
 interface SeedBook {
@@ -19,7 +20,7 @@ interface SeedBook {
   title: string;
   releaseDate: Date;
   publisher: string;
-  genre: string;
+  coverUrl?: string;
 }
 
 interface SeedMovie {
@@ -30,7 +31,7 @@ interface SeedMovie {
   protagonist: string;
   releaseDate: Date;
   soundtrack?: string;
-  genre: string;
+  coverUrl?: string;
 }
 
 interface SeedData {
@@ -324,9 +325,85 @@ const initialAlbums: SeedAlbum[] = [
   },
 ];
 
-const initialBooks: SeedBook[] = [];
+const initialBooks: SeedBook[] = [
+  {
+    author: 'guillermo arriaga',
+    title: 'el hombre',
+    publisher: 'alfaguara',
+    releaseDate: new Date('2025-05-12'),
+  },
+  {
+    author: 'guillermo arriaga',
+    title: 'el salvaje',
+    publisher: 'alfaguara',
+    releaseDate: new Date('2016-10-01'),
+  },
+  {
+    author: 'guillermo arriaga',
+    title: 'salvar el fuego',
+    publisher: 'alfaguara',
+    releaseDate: new Date('2020-03-19'),
+  },
+  {
+    author: 'john katzenbach',
+    title: 'the analyst',
+    publisher: 'ballantine books',
+    releaseDate: new Date('2002-01-29'),
+  },
+  {
+    author: 'franz kafka',
+    title: 'the metamorphosis',
+    publisher: 'penguin classics',
+    releaseDate: new Date('1915-10-01'),
+  },
+];
 
-const initialMovies: SeedMovie[] = [];
+const initialMovies: SeedMovie[] = [
+  {
+    title: 'camino a la redencion',
+    director: 'guillermo arriaga',
+    protagonist: 'jennifer lawrence',
+    studio: 'wild bunch',
+    writer: 'guillermo arriaga',
+    releaseDate: new Date('2010-07-23'),
+  },
+  {
+    title: 'babel',
+    director: 'guillermo arriaga',
+    protagonist: 'brad pitt',
+    studio: 'central films',
+    writer: 'guillermo arriaga',
+    releaseDate: new Date('2006-11-10'),
+  },
+  {
+    title: 'prisioners',
+    director: 'denis villeneuve',
+    protagonist: 'hugh jackman',
+    studio: 'warner bros.',
+    writer: 'aaron guzikowski',
+    releaseDate: new Date('2013-11-08'),
+    soundtrack:
+      'https://open.spotify.com/album/5MdxtYNgZJiZMegeZ3Qe1U?si=CQ7Tp7PnQ2SXtvMhioaITQ',
+  },
+  {
+    title: 'cloverfield',
+    director: 'matt reeves',
+    protagonist: 'michael stahl-david',
+    studio: 'paramount pictures',
+    writer: 'drew goddard',
+    releaseDate: new Date('2008-01-18'),
+  },
+  {
+    title: 'alien',
+    director: 'ridley scott',
+    protagonist: 'sigourney weaver',
+    studio: '20th century fox',
+    writer: "dan o'bannon",
+    releaseDate: new Date('1979-05-25'),
+    soundtrack:
+      'https://open.spotify.com/album/2ubcKYeOHGJ5UHHNBAuaKb?si=8coGNTdZTH2WzKg7Oa7mMw',
+  },
+];
 
 export const initialData: SeedData = {
   genres: initialGenres,

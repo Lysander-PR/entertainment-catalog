@@ -8,6 +8,7 @@ import { FilesModule } from './files/files.module';
 import { AlbumsModule } from './albums/albums.module';
 import { GenresModule } from './genres/genres.module';
 import { CommonModule } from './common/common.module';
+import { SeedModule } from './seed/seed.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { CommonModule } from './common/common.module';
     AlbumsModule,
     GenresModule,
     CommonModule,
+    SeedModule,
   ],
   providers: [],
 })

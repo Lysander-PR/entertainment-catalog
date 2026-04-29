@@ -24,6 +24,10 @@ export class QueryFailedErrorFilter implements ExceptionFilter {
       exception.stack,
     );
 
+    if (driverError.code.startsWith('22')) {
+      this.dataException(driverError.code, exception.message);
+    }
+
     if (driverError.code.startsWith('23')) {
       this.integrityConstraintViolation(driverError);
     }
@@ -38,6 +42,19 @@ export class QueryFailedErrorFilter implements ExceptionFilter {
     throw new InternalServerErrorException(
       'A database error occurred - check server logs for more details',
     );
+  }
+
+  private dataException(code: string, message: string): void {
+    switch (code) {
+      case '22001':
+        throw new BadRequestException(`The data is too long: ${message}`);
+      case '22003':
+        throw new BadRequestException(`Numeric Value Out Of Range: ${message}`);
+      case '22007':
+        throw new BadRequestException(`Invalid Datetime Format: ${message}`);
+      default:
+        break;
+    }
   }
 
   private integrityConstraintViolation(driverError: DriverError): void {

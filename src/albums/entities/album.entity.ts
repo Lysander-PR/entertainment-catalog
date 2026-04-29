@@ -35,11 +35,11 @@ export class Album {
   @Expose()
   releaseDate: Date;
 
-  @Column('varchar', { name: 'studio', length: 20 })
+  @Column('varchar', { name: 'studio', length: 50 })
   @Expose()
   studio: string;
 
-  @Column('varchar', { name: 'artist', length: 30 })
+  @Column('varchar', { name: 'artist', length: 50 })
   @Expose()
   artist: string;
 

@@ -1,11 +1,10 @@
-import { cleanInputString } from '@/common/helpers/clean-input-string.helper';
-import { Transform } from 'class-transformer';
+import { CleanInput } from '@/common/decorators/clean-input.decorator';
 import { IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateGenreDto {
   @IsString()
   @MinLength(1)
   @MaxLength(50)
-  @Transform(({ value }: { value: string }) => cleanInputString(value))
+  @CleanInput()
   description: string;
 }

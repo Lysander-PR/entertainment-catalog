@@ -1,4 +1,4 @@
-import { cleanInputString } from '@/common/helpers/clean-input-string.helper';
+import { CleanInput } from '@/common/decorators/clean-input.decorator';
 import { CreateSongDto } from '@/songs/dto/create-song.dto';
 import { OmitType } from '@nestjs/mapped-types';
 import { plainToInstance, Transform, Type } from 'class-transformer';
@@ -20,13 +20,13 @@ export class CreateAlbumDto {
   @IsString()
   @MinLength(1)
   @MaxLength(100)
-  @Transform(({ value }: { value: string }) => cleanInputString(value))
+  @CleanInput()
   album: string;
 
   @IsString()
   @MinLength(1)
   @MaxLength(20)
-  @Transform(({ value }: { value: string }) => cleanInputString(value))
+  @CleanInput()
   studio: string;
 
   @IsDate()
@@ -36,7 +36,7 @@ export class CreateAlbumDto {
   @IsString()
   @MinLength(1)
   @MaxLength(30)
-  @Transform(({ value }: { value: string }) => cleanInputString(value))
+  @CleanInput()
   artist: string;
 
   @IsArray()

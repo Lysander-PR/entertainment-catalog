@@ -10,41 +10,41 @@ import {
 
 import { onlyAlphaWithSpaces } from '@/common/helpers/messages-validator.helper';
 import { alphaWithSpacesRegex } from '@/common/utils/regular-expressions.util';
-import { Transform, Type } from 'class-transformer';
-import { cleanInputString } from '@/common/helpers/clean-input-string.helper';
+import { Type } from 'class-transformer';
+import { CleanInput } from '@/common/decorators/clean-input.decorator';
 
 export class CreateMovieDto {
   @IsString()
   @Matches(alphaWithSpacesRegex, { message: onlyAlphaWithSpaces })
   @MinLength(1)
   @MaxLength(30)
-  @Transform(({ value }: { value: string }) => cleanInputString(value))
+  @CleanInput()
   director: string;
 
   @IsString()
   @MinLength(1)
   @MaxLength(30)
-  @Transform(({ value }: { value: string }) => cleanInputString(value))
+  @CleanInput()
   title: string;
 
   @IsString()
   @Matches(alphaWithSpacesRegex, { message: onlyAlphaWithSpaces })
   @MinLength(1)
   @MaxLength(30)
-  @Transform(({ value }: { value: string }) => cleanInputString(value))
+  @CleanInput()
   writer: string;
 
   @IsString()
   @MinLength(1)
   @MaxLength(20)
-  @Transform(({ value }: { value: string }) => cleanInputString(value))
+  @CleanInput()
   studio: string;
 
   @IsString()
   @Matches(alphaWithSpacesRegex, { message: onlyAlphaWithSpaces })
   @MinLength(1)
   @MaxLength(30)
-  @Transform(({ value }: { value: string }) => cleanInputString(value))
+  @CleanInput()
   protagonist: string;
 
   @IsDate()
@@ -53,8 +53,6 @@ export class CreateMovieDto {
 
   @IsOptional()
   @IsUrl()
-  @Transform(({ value }: { value?: string }) =>
-    value ? cleanInputString(value) : value,
-  )
+  @CleanInput()
   soundtrack?: string;
 }

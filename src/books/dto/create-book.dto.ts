@@ -6,19 +6,19 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 
 import { onlyAlphaWithSpacesString } from '@/common/utils/messages-validator.util';
 import { alphaWithSpacesRegex } from '@/common/utils/regular-expressions.util';
 import { onlyAlphaWithSpaces } from '@/common/helpers/messages-validator.helper';
-import { cleanInputString } from '@/common/helpers/clean-input-string.helper';
+import { CleanInput } from '@/common/decorators/clean-input.decorator';
 
 export class CreateBookDto {
   @IsString()
   @Matches(alphaWithSpacesRegex, { message: onlyAlphaWithSpacesString })
   @MinLength(1)
   @MaxLength(30)
-  @Transform(({ value }: { value: string }) => cleanInputString(value))
+  @CleanInput()
   author: string;
 
   @IsString()
@@ -26,15 +26,13 @@ export class CreateBookDto {
   @MinLength(1)
   @MaxLength(30)
   @IsOptional()
-  @Transform(({ value }: { value: string | undefined }) =>
-    value ? cleanInputString(value) : undefined,
-  )
+  @CleanInput()
   coWriter?: string;
 
   @IsString()
   @MinLength(1)
   @MaxLength(50)
-  @Transform(({ value }: { value: string }) => cleanInputString(value))
+  @CleanInput()
   title: string;
 
   @IsDate()
@@ -44,6 +42,6 @@ export class CreateBookDto {
   @IsString()
   @MinLength(1)
   @MaxLength(50)
-  @Transform(({ value }: { value: string }) => cleanInputString(value))
+  @CleanInput()
   publisher: string;
 }

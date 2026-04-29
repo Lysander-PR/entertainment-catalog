@@ -1,45 +1,9 @@
-interface SeedSong {
-  composer: string;
-  title: string;
-  guestArtist?: string;
-  genre: string;
-}
-
-interface SeedAlbum {
-  album: string;
-  releaseDate: Date;
-  studio: string;
-  artist: string;
-  songs: SeedSong[];
-  coverUrl?: string;
-}
-
-interface SeedBook {
-  author: string;
-  coWriter?: string;
-  title: string;
-  releaseDate: Date;
-  publisher: string;
-  coverUrl?: string;
-}
-
-interface SeedMovie {
-  director: string;
-  title: string;
-  writer: string;
-  studio: string;
-  protagonist: string;
-  releaseDate: Date;
-  soundtrack?: string;
-  coverUrl?: string;
-}
-
-interface SeedData {
-  genres: string[];
-  albums: SeedAlbum[];
-  books: SeedBook[];
-  movies: SeedMovie[];
-}
+import {
+  SeedAlbum,
+  SeedBook,
+  SeedData,
+  SeedMovie,
+} from '@/seed/types/interfaces/seed.interface';
 
 const initialGenres: string[] = [
   'rock',

@@ -12,6 +12,7 @@ import { onlyAlphaWithSpacesString } from '@/common/utils/messages-validator.uti
 import { alphaWithSpacesRegex } from '@/common/utils/regular-expressions.util';
 import { onlyAlphaWithSpaces } from '@/common/helpers/messages-validator.helper';
 import { CleanInput } from '@/common/decorators/clean-input.decorator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateBookDto {
   @IsString()
@@ -19,7 +20,12 @@ export class CreateBookDto {
   @MinLength(1)
   @MaxLength(30)
   @CleanInput()
-  author: string;
+  @ApiProperty({
+    description: 'The name of the author of the book',
+    example: ' Gabriel García Márquez',
+    required: true,
+  })
+  author!: string;
 
   @IsString()
   @Matches(alphaWithSpacesRegex, { message: onlyAlphaWithSpaces })
@@ -27,21 +33,42 @@ export class CreateBookDto {
   @MaxLength(30)
   @IsOptional()
   @CleanInput()
+  @ApiPropertyOptional({
+    description: 'The name of the co-writer of the book',
+    example: 'Juan Perez',
+  })
   coWriter?: string;
 
   @IsString()
   @MinLength(1)
   @MaxLength(50)
   @CleanInput()
-  title: string;
+  @ApiProperty({
+    description: 'The title of the book',
+    example: 'Cien Anos De Soledad',
+    required: true,
+  })
+  title!: string;
 
   @IsDate()
   @Type(() => Date)
-  releaseDate: Date;
+  @ApiProperty({
+    description: 'Book release date in ISO format',
+    example: '1967-05-30',
+    type: String,
+    format: 'date',
+    required: true,
+  })
+  releaseDate!: Date;
 
   @IsString()
   @MinLength(1)
   @MaxLength(50)
   @CleanInput()
-  publisher: string;
+  @ApiProperty({
+    description: 'The publisher of the book',
+    example: 'Sudamericana',
+    required: true,
+  })
+  publisher!: string;
 }

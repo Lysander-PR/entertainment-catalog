@@ -11,32 +11,62 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import {
+  ApiHideProperty,
+  ApiProperty,
+  ApiPropertyOptional,
+} from '@nestjs/swagger';
 
 @Entity('movies')
 @Exclude()
 export class Movie {
   @PrimaryGeneratedColumn('uuid')
   @Expose()
+  @ApiProperty({
+    description: 'Unique identifier of the movie',
+    example: 'd95a8f87-7a2e-4f67-b432-7e9e9f69ea23',
+    format: 'uuid',
+  })
   id: string;
 
   @Column('varchar', { name: 'director', length: 30 })
   @Expose()
+  @ApiProperty({
+    description: 'Director name',
+    example: 'Denis Villeneuve',
+  })
   director: string;
 
   @Column('varchar', { name: 'title', length: 30 })
   @Expose()
+  @ApiProperty({
+    description: 'Movie title',
+    example: 'Dune',
+  })
   title: string;
 
   @Column('varchar', { name: 'writer', length: 30 })
   @Expose()
+  @ApiProperty({
+    description: 'Writer name',
+    example: 'Jon Spaihts',
+  })
   writer: string;
 
   @Column('varchar', { name: 'studio', length: 20 })
   @Expose()
+  @ApiProperty({
+    description: 'Production studio',
+    example: 'Warner Bros',
+  })
   studio: string;
 
   @Column('varchar', { name: 'protagonist', length: 30 })
   @Expose()
+  @ApiProperty({
+    description: 'Main protagonist actor/actress',
+    example: 'Timothee Chalamet',
+  })
   protagonist: string;
 
   @Column('date', {
@@ -47,13 +77,24 @@ export class Movie {
     },
   })
   @Expose()
+  @ApiProperty({
+    description: 'Movie release date',
+    type: String,
+    format: 'date',
+    example: '2021-10-22',
+  })
   releaseDate: Date;
 
   @Column('text', { name: 'soundtrack', nullable: true })
   @Expose()
+  @ApiPropertyOptional({
+    description: 'Optional soundtrack URL',
+    example: 'https://open.spotify.com/track/example',
+  })
   soundtrack?: string;
 
   @Column('bool', { name: 'active', default: true })
+  @ApiHideProperty()
   active: boolean;
 
   @CreateDateColumn({
@@ -61,15 +102,29 @@ export class Movie {
     default: () => 'CURRENT_TIMESTAMP',
   })
   @Expose()
+  @ApiProperty({
+    description: 'Creation timestamp',
+    type: String,
+    format: 'date-time',
+  })
   createdAt: Date;
 
   @Column('uuid', { name: 'poster_id', nullable: true })
   @Expose()
+  @ApiPropertyOptional({
+    description: 'Associated poster id',
+    format: 'uuid',
+    example: '5d89a0fa-fb6d-4e65-ae09-111c6b334b7f',
+  })
   posterId?: string;
 
   @OneToOne(() => Cover, (cover) => cover.movie, { cascade: true, eager: true })
   @JoinColumn({ name: 'poster_id' })
   @Expose()
+  @ApiPropertyOptional({
+    description: 'Poster metadata object',
+    type: Object,
+  })
   poster?: Cover;
 
   @BeforeInsert()

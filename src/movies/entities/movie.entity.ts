@@ -123,7 +123,7 @@ export class Movie {
   @Expose()
   @ApiPropertyOptional({
     description: 'Poster metadata object',
-    type: Object,
+    type: () => Cover,
   })
   poster?: Cover;
 

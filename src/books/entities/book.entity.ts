@@ -107,7 +107,7 @@ export class Book {
   @Expose()
   @ApiPropertyOptional({
     description: 'Cover metadata object',
-    type: Object,
+    type: () => Cover,
   })
   cover?: Cover;
 

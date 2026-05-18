@@ -9,17 +9,27 @@ import {
 
 import { Song } from '@/songs/entities/song.entity';
 import { capitalize } from '@/common/helpers/capitalize.helper';
+import { ApiProperty } from '@nestjs/swagger';
 
 @Entity('genres')
 export class Genre {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @ApiProperty({
+    description: 'Unique identifier of the genre',
+    format: 'uuid',
+    example: 'd95a8f87-7a2e-4f67-b432-7e9e9f69ea23',
+  })
+  id!: string;
 
   @Column('varchar', { name: 'genre', unique: true, length: 50 })
-  genre: string;
+  @ApiProperty({
+    description: 'Genre name',
+    example: 'Rock',
+  })
+  genre!: string;
 
   @OneToMany(() => Song, (song) => song.genre)
-  songs: Song[];
+  songs!: Song[];
 
   @BeforeInsert()
   @BeforeUpdate()

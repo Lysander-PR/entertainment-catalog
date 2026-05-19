@@ -9,6 +9,8 @@ import { AlbumsModule } from './albums/albums.module';
 import { GenresModule } from './genres/genres.module';
 import { CommonModule } from './common/common.module';
 import { SeedModule } from './seed/seed.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { createKeyv } from '@keyv/redis';
 
 @Module({
   imports: [
@@ -21,6 +23,13 @@ import { SeedModule } from './seed/seed.module';
       database: envs.DB_NAME,
       autoLoadEntities: true,
       synchronize: true,
+    }),
+    CacheModule.registerAsync({
+      useFactory: () => ({
+        ttl: 3 * 60 * 1000,
+        stores: [createKeyv(envs.REDIS_URL)],
+      }),
+      isGlobal: true,
     }),
     BooksModule,
     MoviesModule,

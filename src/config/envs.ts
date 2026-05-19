@@ -11,6 +11,7 @@ const enviromentsSchema = z.object({
   SUPABASE_URL: z.url(),
   SUPABASE_KEY: z.string(),
   SUPABASE_BUCKET: z.string(),
+  REDIS_URL: z.url(),
 });
 
 const { error, data } = enviromentsSchema.safeParse(process.env);

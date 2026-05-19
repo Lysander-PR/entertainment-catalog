@@ -13,3 +13,9 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
+  redis:
+    container_name: redis-server
+    image: redis:8.6.3
+    restart: always
+    ports:
+      - 6379:6379

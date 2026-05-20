@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -18,16 +19,22 @@ import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { BuildStoragePath } from './types/interfaces/build-storage-path';
 import { Cover } from '@/files/entities/cover.entity';
 import { Song } from '@/songs/entities/song.entity';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ALBUMS_PATH } from './types/consts/albums.const';
+import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
 
 @Injectable()
 export class AlbumsService {
   private readonly storageFolder = 'albums';
+  private readonly cacheKey = `/${APP_PREFIX}/${ALBUMS_PATH}`;
 
   constructor(
     @InjectRepository(Album)
     private readonly albumRepository: Repository<Album>,
     private readonly commonService: CommonService,
     private readonly dataSource: DataSource,
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager: Cache,
   ) {}
 
   async create(
@@ -69,6 +76,7 @@ export class AlbumsService {
           }),
         );
 
+        await this.cacheManager.del(this.cacheKey);
         return albumSaved;
       }),
     );
@@ -125,6 +133,7 @@ export class AlbumsService {
           albumUpdated.coverId = cover.id;
         }
 
+        await this.cacheManager.del(`${this.cacheKey}/${id}`);
         return await manager.save(albumUpdated);
       }),
     );

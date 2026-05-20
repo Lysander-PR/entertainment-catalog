@@ -38,9 +38,10 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { ALBUMS_PATH } from './types/consts/albums.const';
 
 @ApiTags('Albums')
-@Controller('albums')
+@Controller(ALBUMS_PATH)
 @UseFilters(
   QueryFailedErrorFilter,
   UpdateValuesMissingErrorFilter,

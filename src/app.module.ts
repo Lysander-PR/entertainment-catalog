@@ -28,7 +28,12 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
     CacheModule.registerAsync({
       useFactory: () => ({
         ttl: 3 * 60 * 1000,
-        stores: [createKeyv(envs.REDIS_URL)],
+        stores: [
+          createKeyv(envs.REDIS_URL, {
+            connectionTimeout: 5000,
+            throwOnConnectError: true,
+          }),
+        ],
       }),
       isGlobal: true,
     }),

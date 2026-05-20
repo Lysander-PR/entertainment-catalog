@@ -139,6 +139,7 @@ export class MoviesService {
     const movie = await this.findOne(id);
     await this.movieRepository.update({ id }, { active: false });
     await this.cacheManager.del(`${this.cacheKey}/${id}`);
+    await this.cacheManager.del(this.cacheKey);
     return movie;
   }
 

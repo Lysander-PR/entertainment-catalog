@@ -153,6 +153,8 @@ export class AlbumsService {
       .getRepository(Song)
       .update({ albumId: id }, { active: false });
 
+    await this.cacheManager.del(`${this.cacheKey}/${id}`);
+    await this.cacheManager.del(this.cacheKey);
     return album;
   }
 

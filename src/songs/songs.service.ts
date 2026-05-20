@@ -87,6 +87,8 @@ export class SongsService {
   async remove(id: string): Promise<Song> {
     const song = await this.findOne(id);
     await this.songRepository.update({ id }, { active: false });
+    await this.cacheManager.del(`${this.cacheKey}/${id}`);
+    await this.cacheManager.del(this.cacheKey);
     return song;
   }
 

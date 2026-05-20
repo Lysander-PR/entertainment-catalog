@@ -128,6 +128,8 @@ export class BooksService {
   async remove(id: string): Promise<Book> {
     const book = await this.findOne(id);
     await this.bookRepository.update({ id }, { active: false });
+    await this.cacheManager.del(`${this.cacheKey}/${id}`);
+    await this.cacheManager.del(this.cacheKey);
     return book;
   }
 

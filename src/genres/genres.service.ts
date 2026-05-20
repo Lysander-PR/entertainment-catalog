@@ -81,6 +81,8 @@ export class GenresService {
       );
     }
 
+    await this.cacheManager.del(`${this.cacheKey}/${id}`);
+    await this.cacheManager.del(this.cacheKey);
     return genre;
   }
 }

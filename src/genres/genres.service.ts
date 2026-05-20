@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -11,18 +12,27 @@ import { CreateGenreDto } from './dto/create-genre.dto';
 import { UpdateGenreDto } from './dto/update-genre.dto';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { GENRES_PATH } from './types/consts/genres.const';
+import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
 
 @Injectable()
 export class GenresService {
+  private readonly cacheKey = `/${APP_PREFIX}/${GENRES_PATH}`;
+
   constructor(
     @InjectRepository(Genre)
     private readonly genreRepository: Repository<Genre>,
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager: Cache,
   ) {}
 
   async create(createGenreDto: CreateGenreDto): Promise<Genre> {
-    return this.genreRepository.save({
+    const genre = await this.genreRepository.save({
       genre: capitalize(createGenreDto.description),
     });
+    await this.cacheManager.del(this.cacheKey);
+    return genre;
   }
 
   find({ limit, page }: PaginationDto): Promise<Genre[]> {
@@ -57,6 +67,7 @@ export class GenresService {
       );
     }
 
+    await this.cacheManager.del(`${this.cacheKey}/${id}`);
     return genreUpdated;
   }
 

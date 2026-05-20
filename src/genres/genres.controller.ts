@@ -28,9 +28,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Genre } from './entities/genre.entity';
+import { GENRES_PATH } from './types/consts/genres.const';
 
 @ApiTags('Genres')
-@Controller('genres')
+@Controller(GENRES_PATH)
 @UseFilters(QueryFailedErrorFilter, UpdateValuesMissingErrorFilter)
 export class GenresController {
   constructor(private readonly genresService: GenresService) {}

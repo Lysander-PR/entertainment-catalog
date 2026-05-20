@@ -130,6 +130,7 @@ export class MoviesService {
 
         await manager.update(Movie, { id }, movieUpdated);
         await this.cacheManager.del(`${this.cacheKey}/${id}`);
+        await this.cacheManager.del(this.cacheKey);
         return movieUpdated;
       }),
     );

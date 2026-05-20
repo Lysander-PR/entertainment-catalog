@@ -120,6 +120,7 @@ export class BooksService {
         }
 
         await this.cacheManager.del(`${this.cacheKey}/${id}`);
+        await this.cacheManager.del(this.cacheKey);
         return await this.dataSource.manager.save(bookUpdated);
       }),
     );

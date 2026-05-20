@@ -134,6 +134,7 @@ export class AlbumsService {
         }
 
         await this.cacheManager.del(`${this.cacheKey}/${id}`);
+        await this.cacheManager.del(this.cacheKey);
         return await manager.save(albumUpdated);
       }),
     );

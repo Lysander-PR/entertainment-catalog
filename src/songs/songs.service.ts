@@ -81,6 +81,7 @@ export class SongsService {
     }
 
     await this.cacheManager.del(`${this.cacheKey}/${id}`);
+    await this.cacheManager.del(this.cacheKey);
     return songUpdated;
   }
 

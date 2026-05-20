@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -16,16 +17,22 @@ import { CommonService } from '@/common/common.service';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { BuildStoragePath } from './types/interfaces/build-storage-path';
 import { Cover } from '@/files/entities/cover.entity';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { BOOKS_PATH } from './types/consts/books.const';
+import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
 
 @Injectable()
 export class BooksService {
   private readonly storageFolder = 'books';
+  private readonly cacheKey = `/${APP_PREFIX}/${BOOKS_PATH}`;
 
   constructor(
     @InjectRepository(Book)
     private readonly bookRepository: Repository<Book>,
     private readonly commonService: CommonService,
     private readonly dataSource: DataSource,
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager: Cache,
   ) {}
 
   async create(
@@ -58,6 +65,7 @@ export class BooksService {
           book.coverId = cover.id;
         }
 
+        await this.cacheManager.del(this.cacheKey);
         return await manager.save(book);
       }),
     );
@@ -111,6 +119,7 @@ export class BooksService {
           bookUpdated.coverId = cover.id;
         }
 
+        await this.cacheManager.del(`${this.cacheKey}/${id}`);
         return await this.dataSource.manager.save(bookUpdated);
       }),
     );

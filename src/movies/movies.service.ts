@@ -2,6 +2,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Not, Repository } from 'typeorm';
 import {
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -16,16 +17,20 @@ import { BuildStoragePath } from './types/interfaces/build-storage-path';
 import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { CommonService } from '@/common/common.service';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class MoviesService {
   private readonly storageFolder = 'movies';
+  private readonly cacheKey = '/api/movies';
 
   constructor(
     @InjectRepository(Movie)
     private readonly movieRepository: Repository<Movie>,
     private readonly commonService: CommonService,
     private readonly dataSource: DataSource,
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager: Cache,
   ) {}
 
   async create(
@@ -60,6 +65,7 @@ export class MoviesService {
           movie.posterId = cover.id;
         }
 
+        await this.cacheManager.del(this.cacheKey);
         return await manager.save(movie);
       }),
     );
@@ -121,6 +127,7 @@ export class MoviesService {
         }
 
         await manager.update(Movie, { id }, movieUpdated);
+        await this.cacheManager.del(`${this.cacheKey}/${id}`);
         return movieUpdated;
       }),
     );
@@ -129,6 +136,7 @@ export class MoviesService {
   async remove(id: string): Promise<Movie> {
     const movie = await this.findOne(id);
     await this.movieRepository.update({ id }, { active: false });
+    await this.cacheManager.del(`${this.cacheKey}/${id}`);
     return movie;
   }
 

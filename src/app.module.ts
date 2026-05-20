@@ -9,8 +9,9 @@ import { AlbumsModule } from './albums/albums.module';
 import { GenresModule } from './genres/genres.module';
 import { CommonModule } from './common/common.module';
 import { SeedModule } from './seed/seed.module';
-import { CacheModule } from '@nestjs/cache-manager';
+import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
 import { createKeyv } from '@keyv/redis';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -40,6 +41,11 @@ import { createKeyv } from '@keyv/redis';
     CommonModule,
     SeedModule,
   ],
-  providers: [],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CacheInterceptor,
+    },
+  ],
 })
 export class AppModule {}

@@ -32,9 +32,10 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { SONGS_PATH } from './types/consts/songs.const';
 
 @ApiTags('Songs')
-@Controller('songs')
+@Controller(SONGS_PATH)
 @UseFilters(QueryFailedErrorFilter, UpdateValuesMissingErrorFilter)
 @UseInterceptors(ClassSerializerInterceptor)
 @SerializeOptions({ type: Song })

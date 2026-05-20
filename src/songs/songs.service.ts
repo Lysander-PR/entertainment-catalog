@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -13,12 +14,19 @@ import { Song } from './entities/song.entity';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params.interface';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { SONGS_PATH } from './types/consts/songs.const';
+import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
 
 @Injectable()
 export class SongsService {
+  private readonly cacheKey = `/${APP_PREFIX}/${SONGS_PATH}`;
+
   constructor(
     @InjectRepository(Song)
     private readonly songRepository: Repository<Song>,
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager: Cache,
   ) {}
 
   async create(createSongDto: CreateSongDto): Promise<Song> {
@@ -27,7 +35,9 @@ export class SongsService {
       title: createSongDto.title,
     });
 
-    return this.songRepository.save(createSongDto);
+    const song = await this.songRepository.save(createSongDto);
+    await this.cacheManager.del(this.cacheKey);
+    return song;
   }
 
   findAll({ limit, page }: PaginationDto): Promise<Song[]> {
@@ -70,6 +80,7 @@ export class SongsService {
       );
     }
 
+    await this.cacheManager.del(`${this.cacheKey}/${id}`);
     return songUpdated;
   }
 

@@ -18,11 +18,13 @@ import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-param
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { CommonService } from '@/common/common.service';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { MOVIES_PATH } from './types/consts/movies.const';
+import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
 
 @Injectable()
 export class MoviesService {
   private readonly storageFolder = 'movies';
-  private readonly cacheKey = '/api/movies';
+  private readonly cacheKey = `/${APP_PREFIX}/${MOVIES_PATH}`;
 
   constructor(
     @InjectRepository(Movie)

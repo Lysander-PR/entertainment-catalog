@@ -38,9 +38,10 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { MOVIES_PATH } from './types/consts/movies.const';
 
 @ApiTags('Movies')
-@Controller('movies')
+@Controller(MOVIES_PATH)
 @UseFilters(
   QueryFailedErrorFilter,
   UpdateValuesMissingErrorFilter,

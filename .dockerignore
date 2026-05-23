@@ -1,0 +1,6 @@
+.vs-code
+dist
+node_modules
+postgress
+
+.node-version

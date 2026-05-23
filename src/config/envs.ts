@@ -1,5 +1,10 @@
 import { z } from 'zod';
-process.loadEnvFile();
+
+const isProd = process.env.NODE_ENV === 'prod';
+
+if (!isProd) {
+  process.loadEnvFile();
+}
 
 const enviromentsSchema = z.object({
   PORT: z.coerce.number(),
@@ -20,4 +25,6 @@ if (error) {
   throw new Error(`Config validation error: ${error.message}`);
 }
 
-export const envs = data;
+const envs = data;
+
+export { envs, isProd };

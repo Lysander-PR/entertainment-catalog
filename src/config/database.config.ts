@@ -1,5 +1,5 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { envs } from './envs';
+import { envs, isProd } from './envs';
 
 export const databaseConfig: TypeOrmModuleOptions = {
   type: 'postgres',
@@ -10,4 +10,8 @@ export const databaseConfig: TypeOrmModuleOptions = {
   database: envs.DB_NAME,
   autoLoadEntities: true,
   synchronize: true,
+  ssl: isProd,
+  extra: {
+    ssl: isProd ? { rejectUnauthorized: true } : null,
+  },
 };

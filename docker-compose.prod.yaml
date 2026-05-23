@@ -1,0 +1,24 @@
+services:
+  app:
+    container_name: entertainments
+    image: lysanderpr/entertainments:1.0.0
+    ports:
+      - ${PORT}:3000
+    restart: always
+    environment:
+      - PORT=${PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - SUPABASE_BUCKET=${SUPABASE_BUCKET}
+      - REDIS_URL=${REDIS_URL}
+  redis:
+    container_name: redis-server
+    image: redis:8.6.3
+    restart: always
+    ports:
+      - 6379:6379

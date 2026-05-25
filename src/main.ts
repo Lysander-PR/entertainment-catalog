@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { APP_PREFIX } from './common/types/consts/app-prefix.const';
+import { envs, isProd } from './config/envs';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -24,8 +25,9 @@ async function bootstrap() {
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup(APP_PREFIX, app, documentFactory);
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(envs.PORT);
 
   logger.log(`Application is running on: ${await app.getUrl()}`);
+  logger.debug('We are in Prod?' + isProd);
 }
 bootstrap();

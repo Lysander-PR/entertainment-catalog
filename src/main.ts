@@ -28,6 +28,5 @@ async function bootstrap() {
   await app.listen(envs.PORT);
 
   logger.log(`Application is running on: ${await app.getUrl()}`);
-  logger.log('We are in Prod?' + isProd);
 }
 bootstrap();

@@ -6,11 +6,19 @@ on:
   pull_request:
     branches: ['main']
 
+# permissions:
+#   contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Git Semantic Version
         uses: PaulHatch/semantic-version@v5.4.0
         id: version
@@ -18,6 +26,14 @@ jobs:
           major_pattern: 'major:'
           minor_pattern: 'feat:'
           version_format: '${major}.${minor}.${patch}'
+
+      # - name: Create and push git tag
+      #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      #   run: |
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git tag -a "v${{ steps.version.outputs.version }}" -m "Release v${{ steps.version.outputs.version }}" || echo "Tag already exists"
+      #     git push origin "v${{ steps.version.outputs.version }}" || true
 
       - name: Docker Login
         uses: docker/login-action@v4

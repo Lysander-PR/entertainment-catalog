@@ -32,7 +32,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          TAG_NAME="${{ steps.version.outputs.version }}"
+          TAG_NAME="v${{ steps.version.outputs.version }}"
           git tag -a $TAG_NAME -m "Release $TAG_NAME" || echo "Tag already exists"
           git push origin $TAG_NAME || true
 

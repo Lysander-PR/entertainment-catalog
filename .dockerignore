@@ -1,6 +1,6 @@
 .vs-code
 dist
 node_modules
-postgress
+postgres
 
 .node-version

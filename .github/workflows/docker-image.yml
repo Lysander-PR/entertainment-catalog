@@ -45,4 +45,4 @@ jobs:
           NEW_VERSION: ${{ steps.version.outputs.version }}
           IMAGE_NAME: 'entertainments'
         run: |
-          docker push $DOCKER_USER/$IMAGE_NAME:$NEW_VERSION $DOCKER_USER/$IMAGE_NAME:latest
+          docker push -t $DOCKER_USER/$IMAGE_NAME:$NEW_VERSION -t $DOCKER_USER/$IMAGE_NAME:latest

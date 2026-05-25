@@ -11,11 +11,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - name: Git Semantic Version
         uses: PaulHatch/semantic-version@v5.4.0
         id: version
@@ -25,24 +20,24 @@ jobs:
           version_format: '${major}.${minor}.${patch}'
 
       - name: Docker Login
-        env:
-          DOCKER_USER: ${{ secrets.DOCKER_USER }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        run: |
-          docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build Docker Image
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
         env:
           DOCKER_USER: ${{ secrets.DOCKER_USER }}
           NEW_VERSION: ${{ steps.version.outputs.version }}
           IMAGE_NAME: 'entertainments'
-        run: |
-          docker build -t $DOCKER_USER/$IMAGE_NAME:$NEW_VERSION -t $DOCKER_USER/$IMAGE_NAME:latest .
-
-      - name: Push Docker Image
-        env:
-          DOCKER_USER: ${{ secrets.DOCKER_USER }}
-          NEW_VERSION: ${{ steps.version.outputs.version }}
-          IMAGE_NAME: 'entertainments'
-        run: |
-          docker push --all-tags $DOCKER_USER/$IMAGE_NAME
+        with:
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: $DOCKER_USER/$IMAGE_NAME:$NEW_VERSION,$DOCKER_USER/$IMAGE_NAME:latest

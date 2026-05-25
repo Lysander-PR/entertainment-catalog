@@ -40,4 +40,6 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: $DOCKER_USER/$IMAGE_NAME:$NEW_VERSION,$DOCKER_USER/$IMAGE_NAME:latest
+          tags: |
+            ${{ env.DOCKER_USER }}/${{ env.IMAGE_NAME }}:${{ env.NEW_VERSION }}
+            ${{ env.DOCKER_USER }}/${{ env.IMAGE_NAME }}:latest

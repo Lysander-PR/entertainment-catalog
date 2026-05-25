@@ -2,17 +2,47 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ['main']
   pull_request:
-    branches: [ "main" ]
+    branches: ['main']
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Git Semantic Version
+        uses: PaulHatch/semantic-version@v5.4.0
+        id: version
+        with:
+          major_pattern: 'major:'
+          minor_pattern: 'feat:'
+          version_format: '${major}.${minor}.${patch}'
+
+      - name: Docker Login
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+
+      - name: Build Docker Image
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          NEW_VERSION: ${{ steps.version.outputs.version }}
+          IMAGE_NAME: 'entertainments'
+        run: |
+          docker build -t $DOCKER_USER/$IMAGE_NAME:$NEW_VERSION -t $DOCKER_USER/$IMAGE_NAME:latest .
+
+      - name: Push Docker Image
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          NEW_VERSION: ${{ steps.version.outputs.version }}
+          IMAGE_NAME: 'entertainments'
+        run: |
+          docker push $DOCKER_USER/$IMAGE_NAME:$NEW_VERSION $DOCKER_USER/$IMAGE_NAME:latest

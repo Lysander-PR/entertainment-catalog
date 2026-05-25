@@ -27,6 +27,6 @@ async function bootstrap() {
 
   await app.listen(envs.PORT);
 
-  logger.log(`WAVE!!!`);
+  logger.log(`WAVE 2!!!`);
 }
 bootstrap();

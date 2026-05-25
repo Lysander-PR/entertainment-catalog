@@ -29,7 +29,7 @@ jobs:
           DOCKER_USER: ${{ secrets.DOCKER_USER }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
-          docker login -u $DOCKER_USER --password-stdin $DOCKER_PASSWORD
+          docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
 
       - name: Build Docker Image
         env:
@@ -38,10 +38,3 @@ jobs:
           IMAGE_NAME: 'entertainments'
         run: |
           docker build -t $DOCKER_USER/$IMAGE_NAME:$NEW_VERSION -t $DOCKER_USER/$IMAGE_NAME:latest .
-
-      - name: Push Docker Image
-        env:
-          DOCKER_USER: ${{ secrets.DOCKER_USER }}
-          IMAGE_NAME: 'entertainments'
-        run: |
-          docker push --all-tags $DOCKER_USER/$IMAGE_NAME

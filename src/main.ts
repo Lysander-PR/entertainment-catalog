@@ -3,7 +3,7 @@ import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { APP_PREFIX } from './common/types/consts/app-prefix.const';
-import { envs, isProd } from './config/envs';
+import { envs } from './config/envs';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');

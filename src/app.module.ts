@@ -13,6 +13,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { databaseConfig } from './config/database.config';
 import { cacheConfig } from './config/cache.config';
 import { HttpLoggerMiddleware } from './common/middleware/http-logger.middleware';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { HttpLoggerMiddleware } from './common/middleware/http-logger.middleware
     GenresModule,
     CommonModule,
     SeedModule,
+    UserModule,
   ],
   providers: [
     {

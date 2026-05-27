@@ -1,98 +1,346 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 🎬 Entertainment Catalog API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A complete RESTful API for managing an entertainment catalog (movies, books, albums, and songs) built with NestJS, designed to serve information to multimedia content presentation applications.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 📋 Table of Contents
 
-## Description
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Architecture](#-architecture)
+- [Prerequisites](#-prerequisites)
+- [Installation](#-installation)
+- [Configuration](#-configuration)
+- [Usage](#-usage)
+- [API Endpoints](#-api-endpoints)
+- [Documentation](#-documentation)
+- [Docker](#-docker)
+- [Available Scripts](#-available-scripts)
+- [Testing](#-testing)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## ✨ Features
 
-## Project setup
+### Main Functionalities
 
-```bash
-$ pnpm install
+- **Complete CRUD**: Create, Read, Update, and Delete operations for all entertainment types
+- **File Management**: Upload and management of cover images using Supabase Storage
+- **Cache System**: Redis implementation to optimize frequent queries
+- **Pagination**: Configurable pagination system in all listing endpoints
+- **Robust Validation**: Multi-layer data validation with `class-validator` and `zod`
+- **Interactive Documentation**: API automatically documented with Swagger/OpenAPI
+- **Seed Data**: Endpoint to populate the database with sample data
+- **HTTP Logging**: Custom middleware for logging all HTTP requests
+
+### Advanced Technical Features
+
+- **Input Sanitization**: Custom `@CleanInput()` decorator to clean and normalize input data
+- **Error Handling**: Global filters for database, validation, and storage errors
+- **Serialization**: Precise control of exposed data using `class-transformer`
+- **Interceptors**: Global cache interceptor for automatic optimization
+- **Custom Pipes**: File validation with type and size restrictions
+- **TypeORM Relations**: Optimized entity relationships with eager/lazy loading
+
+## 🛠 Tech Stack
+
+### DevOps
+
+- **Containerization**: Docker and Docker Compose
+- **Package Manager**: [pnpm](https://pnpm.io/)
+
+## 🏗 Architecture
+
+The project follows a modular architecture based on Clean Architecture:
+
+```
+src/
+├── albums/           # Albums module
+├── books/            # Books module
+├── movies/           # Movies module
+├── songs/            # Songs module
+├── genres/           # Genres module
+├── files/            # File management module
+├── common/           # Shared utilities
+│   ├── decorators/   # Custom decorators
+│   ├── filters/      # Exception filters
+│   ├── helpers/      # Helper functions
+│   ├── interceptors/ # Interceptors
+│   ├── middleware/   # HTTP middleware
+│   └── pipes/        # Validation pipes
+├── config/           # Application configuration
+└── seed/             # Initialization data
 ```
 
-## Compile and run the project
+Each module follows the pattern:
 
-```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+```
+module/
+├── dto/              # Data Transfer Objects
+├── entities/         # TypeORM entities
+├── types/            # Types, interfaces, and constants
+├── module.controller.ts
+├── module.service.ts
+└── module.module.ts
 ```
 
-## Run tests
+## 📋 Prerequisites
+
+- Docker and Docker Compose (optional but recommended)
+- Supabase account (for file storage)
+
+## 🚀 Installation
+
+### Option 1: Local Installation
+
+1. **Clone the repository**
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+git clone https://github.com/yourusername/entertaiments-catalog.git
+cd entertaiments-catalog
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+2. **Install dependencies**
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+pnpm install
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+3. **Configure environment variables** (see [Configuration](#-configuration) section)
 
-## Resources
+4. **Start services with Docker Compose**
 
-Check out a few resources that may come in handy when working with NestJS:
+```bash
+docker-compose up -d
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+5. **Start the application**
 
-## Support
+```bash
+pnpm run start:dev
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### Option 2: With Docker Compose (Production)
 
-## Stay in touch
+```bash
+# Using the production compose
+docker-compose -f docker-compose.prod.yaml up -d
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## ⚙ Configuration
 
-## License
+### Environment Variables
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Create a `.env` file in the project root with the following variables:
+
+```env
+# Application
+PORT=3000
+NODE_ENV=development
+
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=tu_password_seguro
+DB_NAME=entertainments_db
+
+# Supabase Storage
+SUPABASE_URL=https://tu-proyecto.supabase.co
+SUPABASE_KEY=tu_supabase_anon_key
+SUPABASE_BUCKET=entertainments-covers
+
+# Redis Cache
+REDIS_URL=redis://localhost:6379
+```
+
+### Supabase Configuration
+
+1. Create a project in [Supabase](https://supabase.com)
+2. Create a bucket named `entertainments-covers` (or your preferred name)
+3. Configure public access policies for reading
+4. Copy the URL and anonymous API Key
+
+## 💻 Usage
+
+### Start the Development Server
+
+```bash
+pnpm run start:dev
+```
+
+The application will be available at `http://localhost:3000`
+
+### Populate the Database
+
+To load sample data:
+
+```bash
+curl -X POST http://localhost:3000/api/seed
+```
+
+### Access the Documentation
+
+Swagger UI: `http://localhost:3000/api`
+
+## 📡 API Endpoints
+
+All endpoints are prefixed with `/api`
+
+### Pagination Parameters
+
+For listing endpoints:
+
+```
+GET /api/movies?limit=10&offset=0
+```
+
+- `limit`: Number of results (default: 10)
+- `offset`: Number of results to skip (default: 0)
+
+### Example Request with Cover
+
+```bash
+curl -X POST http://localhost:3000/api/movies \
+  -F "title=Dune" \
+  -F "director=Denis Villeneuve" \
+  -F "writer=Jon Spaihts" \
+  -F "studio=Warner Bros" \
+  -F "protagonist=Timothee Chalamet" \
+  -F "releaseDate=2021-10-22" \
+  -F "cover=@/path/to/image.jpg"
+```
+
+## 📚 Documentation
+
+### Swagger UI
+
+The interactive API documentation is available at:
+
+```
+http://localhost:3000/api
+```
+
+Here you can:
+
+- View all available endpoints
+- Test requests directly from the browser
+- View request/response schemas
+- Download the OpenAPI specification
+
+## 🐳 Docker
+
+### Multi-Stage Dockerfile
+
+The project uses an optimized Dockerfile with multi-stage builds:
+
+1. **dev-deps**: Installs development dependencies
+2. **builder**: Compiles the TypeScript project
+3. **prod-deps**: Installs only production dependencies
+4. **prod**: Optimized final image (~200MB)
+
+### Docker Compose for Development
+
+```bash
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+Included services:
+
+- PostgreSQL (port 5432)
+- Redis (port 6379)
+
+### Docker Compose for Production
+
+```bash
+docker-compose -f docker-compose.prod.yaml up -d
+```
+
+Included services:
+
+- App (port configured in .env)
+- Redis (port 6379)
+
+> **Note**: In production, PostgreSQL is expected to be on an external service (RDS, etc.)
+
+### Build Docker Image
+
+```bash
+# Build image
+docker build -t entertaiments-api:latest .
+
+# Build with specific tag
+docker build -t entertaiments-api:1.0.0 .
+
+# Publish to Docker Hub
+docker tag entertaiments-api:1.0.0 yourusername/entertaiments:1.0.0
+docker push yourusername/entertaiments:1.0.0
+```
+
+## 🎯 Available Scripts
+
+### Code Quality
+
+```bash
+# Run linter
+pnpm run lint
+
+# Format code
+pnpm run format
+```
+
+### Testing
+
+```bash
+# Run unit tests
+pnpm run test
+
+# Run tests in watch mode
+pnpm run test:watch
+
+# Run tests with coverage
+pnpm run test:cov
+
+# Run E2E tests
+pnpm run test:e2e
+```
+
+## 🧪 Testing
+
+The project includes configuration for:
+
+- **Jest**: Testing framework
+- **Unit tests**: For services and controllers
+- **E2E tests**: For complete application flows
+
+### Run Tests
+
+```bash
+# Unit tests
+pnpm test
+
+# E2E tests
+pnpm run test:e2e
+
+# Coverage
+pnpm run test:cov
+```
+
+## 🤝 Contributing
+
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 🌟 Future Features
+
+- [ ] JWT authentication and authorization
+- [ ] Rate limiting

@@ -15,6 +15,7 @@ import { UserAlreadyExistsParams } from './types/interfaces/user-already-exists.
 import { hashData } from '@/common/helpers/hash.helper';
 import { USER_PATH } from './types/consts/user.const';
 import { CacheKey } from '@/common/abstracts/cache-key.abstract';
+import { isUUID } from 'class-validator';
 
 @Injectable()
 export class UserService extends CacheKey {
@@ -41,7 +42,13 @@ export class UserService extends CacheKey {
   }
 
   async findOne(id: string): Promise<User> {
-    const user = await this.userRepository.findOneBy({ id, active: true });
+    let user: User | null = null;
+
+    if (isUUID(id)) {
+      user = await this.userRepository.findOneBy({ id, active: true });
+    } else {
+      user = await this.userRepository.findOneBy({ email: id, active: true });
+    }
 
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);

@@ -32,13 +32,13 @@ export class UserService extends CacheKey {
     const { email, password, username } = createUserDto;
     await this.userAlreadyExists({ email, username });
 
-    const user = await this.userRepository.save({
+    const user = this.userRepository.create({
       email,
       username,
       password: hashData(password),
     });
 
-    return user;
+    return this.userRepository.save(user);
   }
 
   async findOne(id: string): Promise<User> {

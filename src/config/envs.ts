@@ -17,6 +17,7 @@ const enviromentsSchema = z.object({
   SUPABASE_KEY: z.string(),
   SUPABASE_BUCKET: z.string(),
   REDIS_URL: z.url(),
+  JWT_SECRET: z.string(),
 });
 
 const { error, data } = enviromentsSchema.safeParse(process.env);

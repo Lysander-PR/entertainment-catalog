@@ -20,10 +20,11 @@ import { Cover } from '@/files/entities/cover.entity';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { BOOKS_PATH } from './types/consts/books.const';
 import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
+import { FolderNameForBucket } from '@/common/types/interfaces/storage-folder-entertainment.interface';
 
 @Injectable()
-export class BooksService {
-  private readonly storageFolder = 'books';
+export class BooksService implements FolderNameForBucket {
+  readonly storageFolder = 'books';
   private readonly cacheKey = `/${APP_PREFIX}/${BOOKS_PATH}`;
 
   constructor(

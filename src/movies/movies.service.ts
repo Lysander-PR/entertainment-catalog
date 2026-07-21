@@ -20,10 +20,11 @@ import { CommonService } from '@/common/common.service';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { MOVIES_PATH } from './types/consts/movies.const';
 import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
+import { FolderNameForBucket } from '@/common/types/interfaces/storage-folder-entertainment.interface';
 
 @Injectable()
-export class MoviesService {
-  private readonly storageFolder = 'movies';
+export class MoviesService implements FolderNameForBucket {
+  readonly storageFolder = 'movies';
   private readonly cacheKey = `/${APP_PREFIX}/${MOVIES_PATH}`;
 
   constructor(

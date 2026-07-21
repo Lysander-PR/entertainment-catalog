@@ -22,10 +22,11 @@ import { Song } from '@/songs/entities/song.entity';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ALBUMS_PATH } from './types/consts/albums.const';
 import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
+import { FolderNameForBucket } from '@/common/types/interfaces/storage-folder-entertainment.interface';
 
 @Injectable()
-export class AlbumsService {
-  private readonly storageFolder = 'albums';
+export class AlbumsService implements FolderNameForBucket {
+  readonly storageFolder = 'albums';
   private readonly cacheKey = `/${APP_PREFIX}/${ALBUMS_PATH}`;
 
   constructor(

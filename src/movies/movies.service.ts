@@ -19,14 +19,10 @@ import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { CommonService } from '@/common/common.service';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { MOVIES_PATH } from './types/consts/movies.const';
-import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
-import { FolderNameForBucket } from '@/common/types/interfaces/storage-folder-entertainment.interface';
+import { EntertainmentStorage } from '@/common/abstracts/entertainment-storage.abstract';
 
 @Injectable()
-export class MoviesService implements FolderNameForBucket {
-  readonly storageFolder = 'movies';
-  private readonly cacheKey = `/${APP_PREFIX}/${MOVIES_PATH}`;
-
+export class MoviesService extends EntertainmentStorage {
   constructor(
     @InjectRepository(Movie)
     private readonly movieRepository: Repository<Movie>,
@@ -34,7 +30,9 @@ export class MoviesService implements FolderNameForBucket {
     private readonly dataSource: DataSource,
     @Inject(CACHE_MANAGER)
     private readonly cacheManager: Cache,
-  ) {}
+  ) {
+    super(MOVIES_PATH);
+  }
 
   async create(
     createMovieDto: CreateMovieDto,

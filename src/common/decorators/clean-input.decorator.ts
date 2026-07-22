@@ -1,5 +1,5 @@
 import { Transform, TransformFnParams } from 'class-transformer';
-import { cleanInputString } from '../helpers/clean-input-string.helper';
+import { cleanInputString } from '@/common/helpers/clean-input-string.helper';
 
 export function CleanInput() {
   return Transform(({ value }: TransformFnParams): string | undefined =>

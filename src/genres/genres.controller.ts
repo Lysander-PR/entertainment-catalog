@@ -29,10 +29,13 @@ import {
 } from '@nestjs/swagger';
 import { Genre } from './entities/genre.entity';
 import { GENRES_PATH } from './types/consts/genres.const';
+import { Auth } from '@/auth/decorator/auth.decorator';
+import { Public } from '@/auth/decorator/public.decorator';
 
 @ApiTags('Genres')
 @Controller(GENRES_PATH)
 @UseFilters(QueryFailedErrorFilter, UpdateValuesMissingErrorFilter)
+@Auth()
 export class GenresController {
   constructor(private readonly genresService: GenresService) {}
 
@@ -66,6 +69,7 @@ export class GenresController {
     type: Genre,
     isArray: true,
   })
+  @Public()
   find(@Query() paginationDto: PaginationDto) {
     return this.genresService.find(paginationDto);
   }
@@ -81,6 +85,7 @@ export class GenresController {
   @ApiOkResponse({ description: 'Genre found', type: Genre })
   @ApiNotFoundResponse({ description: 'Genre not found' })
   @ApiBadRequestResponse({ description: 'Invalid UUID format' })
+  @Public()
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.genresService.findOne(id);
   }

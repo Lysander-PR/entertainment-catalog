@@ -37,10 +37,14 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Auth } from '@/auth/decorator/auth.decorator';
+import { Roles } from '@/user/types/enums/roles.enum';
+import { Public } from '@/auth/decorator/public.decorator';
 
 @ApiTags('Files')
 @Controller('files')
 @UseFilters(QueryFailedErrorFilter, StorageApiFilter)
+@Auth(Roles.ADMIN)
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
@@ -122,6 +126,7 @@ export class FilesController {
     description: 'Insufficient permissions to access storage',
   })
   @ApiInternalServerErrorResponse({ description: 'Storage operation failed' })
+  @Public()
   async getFile(@Param('id', ParseUUIDPipe) id: string) {
     const blob = await this.filesService.getFile(id);
     const buffer = Buffer.from(await blob.arrayBuffer());

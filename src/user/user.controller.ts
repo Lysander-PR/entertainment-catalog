@@ -30,12 +30,16 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryFailedErrorFilter } from '@/common/filters/query-failed.filter';
 import { UpdateValuesMissingErrorFilter } from '@/common/filters/update-values-missing.error.filter';
 import { USER_PATH } from './types/consts/user.const';
+import { Auth } from '@/auth/decorator/auth.decorator';
+import { Roles } from './types/enums/roles.enum';
+import { Public } from '@/auth/decorator/public.decorator';
 
 @ApiTags('User')
 @Controller(USER_PATH)
 @UseFilters(QueryFailedErrorFilter, UpdateValuesMissingErrorFilter)
 @UseInterceptors(ClassSerializerInterceptor)
 @SerializeOptions({ type: User })
+@Auth(Roles.ADMIN, Roles.USER)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
@@ -46,6 +50,7 @@ export class UserController {
   @ApiConflictResponse({
     description: 'The email or username already belongs to another user',
   })
+  @Public()
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
   }

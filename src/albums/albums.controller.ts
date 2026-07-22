@@ -39,6 +39,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ALBUMS_PATH } from './types/consts/albums.const';
+import { Auth } from '@/auth/decorator/auth.decorator';
+import { Public } from '@/auth/decorator/public.decorator';
 
 @ApiTags('Albums')
 @Controller(ALBUMS_PATH)
@@ -49,6 +51,7 @@ import { ALBUMS_PATH } from './types/consts/albums.const';
 )
 @UseInterceptors(ClassSerializerInterceptor)
 @SerializeOptions({ type: Album })
+@Auth()
 export class AlbumsController {
   constructor(private readonly albumsService: AlbumsService) {}
 
@@ -145,6 +148,7 @@ export class AlbumsController {
     type: Album,
     isArray: true,
   })
+  @Public()
   find(@Query() paginationDto: PaginationDto) {
     return this.albumsService.find(paginationDto);
   }
@@ -160,6 +164,7 @@ export class AlbumsController {
   @ApiOkResponse({ description: 'Album found', type: Album })
   @ApiNotFoundResponse({ description: 'Album not found' })
   @ApiBadRequestResponse({ description: 'Invalid UUID format' })
+  @Public()
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.albumsService.findOne(id);
   }

@@ -40,6 +40,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { BOOKS_PATH } from './types/consts/books.const';
+import { Auth } from '@/auth/decorator/auth.decorator';
+import { Public } from '@/auth/decorator/public.decorator';
 
 @ApiTags('Books')
 @Controller(BOOKS_PATH)
@@ -50,6 +52,7 @@ import { BOOKS_PATH } from './types/consts/books.const';
 )
 @SerializeOptions({ type: Book })
 @UseInterceptors(ClassSerializerInterceptor)
+@Auth()
 export class BooksController {
   constructor(private readonly booksService: BooksService) {}
 
@@ -122,6 +125,7 @@ export class BooksController {
     type: Book,
     isArray: true,
   })
+  @Public()
   findAll(@Query() paginationDto: PaginationDto) {
     return this.booksService.findAll(paginationDto);
   }
@@ -137,6 +141,7 @@ export class BooksController {
   @ApiOkResponse({ description: 'Book found', type: Book })
   @ApiNotFoundResponse({ description: 'Book not found' })
   @ApiBadRequestResponse({ description: 'Invalid UUID format' })
+  @Public()
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.booksService.findOne(id);
   }

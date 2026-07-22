@@ -33,6 +33,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { SONGS_PATH } from './types/consts/songs.const';
+import { Auth } from '@/auth/decorator/auth.decorator';
+import { Roles } from '@/user/types/enums/roles.enum';
 
 @ApiTags('Songs')
 @Controller(SONGS_PATH)
@@ -50,6 +52,7 @@ export class SongsController {
     description:
       'Song title already exists in the same album or album does not exist',
   })
+  @Auth(Roles.ADMIN, Roles.USER)
   create(@Body() createSongDto: CreateSongDto) {
     return this.songsService.create(createSongDto);
   }
@@ -72,6 +75,7 @@ export class SongsController {
   @ApiOkResponse({ description: 'Song reactivated successfully', type: Song })
   @ApiNotFoundResponse({ description: 'Song not found' })
   @ApiBadRequestResponse({ description: 'Invalid UUID format' })
+  @Auth(Roles.ADMIN, Roles.USER)
   reactivate(@Body('id', ParseUUIDPipe) id: string) {
     return this.songsService.reactivate(id);
   }
@@ -132,6 +136,7 @@ export class SongsController {
   @ApiConflictResponse({
     description: 'Song title already exists in the same album',
   })
+  @Auth(Roles.ADMIN, Roles.USER)
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateSongDto: UpdateSongDto,
@@ -154,6 +159,7 @@ export class SongsController {
   @ApiNotFoundResponse({ description: 'Song not found' })
   @ApiBadRequestResponse({ description: 'Invalid UUID format' })
   @SerializeOptions({ type: SongResponseWithoutRelationsDto })
+  @Auth(Roles.ADMIN, Roles.USER)
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.songsService.remove(id);
   }

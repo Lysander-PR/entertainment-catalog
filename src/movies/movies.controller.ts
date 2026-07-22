@@ -39,6 +39,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { MOVIES_PATH } from './types/consts/movies.const';
+import { Auth } from '@/auth/decorator/auth.decorator';
+import { Public } from '@/auth/decorator/public.decorator';
 
 @ApiTags('Movies')
 @Controller(MOVIES_PATH)
@@ -49,6 +51,7 @@ import { MOVIES_PATH } from './types/consts/movies.const';
 )
 @UseInterceptors(ClassSerializerInterceptor)
 @SerializeOptions({ type: Movie })
+@Auth()
 export class MoviesController {
   constructor(private readonly moviesService: MoviesService) {}
 
@@ -130,6 +133,7 @@ export class MoviesController {
     type: Movie,
     isArray: true,
   })
+  @Public()
   findAll(@Query() paginationDto: PaginationDto) {
     return this.moviesService.findAll(paginationDto);
   }
@@ -145,6 +149,7 @@ export class MoviesController {
   @ApiOkResponse({ description: 'Movie found', type: Movie })
   @ApiNotFoundResponse({ description: 'Movie not found' })
   @ApiBadRequestResponse({ description: 'Invalid UUID format' })
+  @Public()
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.moviesService.findOne(id);
   }

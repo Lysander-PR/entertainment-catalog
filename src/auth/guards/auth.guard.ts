@@ -9,8 +9,8 @@ import { AuthGuard } from '@nestjs/passport';
 
 import { User } from '@/user/entities/user.entity';
 import { Roles } from '@/user/types/enums/roles.enum';
-import { META_ROLES } from 'src/auth/types/consts/meta-roles.const';
-import { IS_PUBLIC_KEY } from 'src/auth/types/consts/public-key.const';
+import { META_ROLES } from '@/auth/types/consts/meta-roles.const';
+import { IS_PUBLIC_KEY } from '@/auth/types/consts/public-key.const';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {

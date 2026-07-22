@@ -21,6 +21,7 @@ async function bootstrap() {
     .setTitle('Entertainment Catalog API')
     .setDescription('The entertainment catalog API description')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup(APP_PREFIX, app, documentFactory);

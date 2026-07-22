@@ -25,6 +25,7 @@ import { ALLOWED_ALL_MIME_TYPES } from './types/enums/mime-types.enum';
 import { Cover } from './entities/cover.entity';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiForbiddenResponse,
@@ -49,6 +50,7 @@ export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
   @Post('upload')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Upload a file and create a cover record' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -85,6 +87,7 @@ export class FilesController {
   }
 
   @Delete(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a file by id' })
   @ApiParam({
     name: 'id',
@@ -136,6 +139,7 @@ export class FilesController {
   }
 
   @Patch(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Replace an existing file by id' })
   @ApiParam({
     name: 'id',

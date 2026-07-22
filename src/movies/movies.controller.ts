@@ -27,6 +27,7 @@ import { UpdateValuesMissingErrorFilter } from '@/common/filters/update-values-m
 import { FileValidationPipe } from '@/files/pipes/file-validation.pipe';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiConflictResponse,
   ApiConsumes,
@@ -56,6 +57,7 @@ export class MoviesController {
   constructor(private readonly moviesService: MoviesService) {}
 
   @Post()
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new movie' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -155,6 +157,7 @@ export class MoviesController {
   }
 
   @Patch(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update an existing movie' })
   @ApiParam({
     name: 'id',
@@ -211,6 +214,7 @@ export class MoviesController {
   }
 
   @Delete(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Soft delete a movie (set active=false)' })
   @ApiParam({
     name: 'id',
@@ -226,6 +230,7 @@ export class MoviesController {
   }
 
   @Post('reactivate')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Reactivate a previously soft-deleted movie' })
   @ApiBody({
     schema: {

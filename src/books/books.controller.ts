@@ -28,6 +28,7 @@ import { FileValidationPipe } from '@/files/pipes/file-validation.pipe';
 import { MimeTypes } from '@/files/types/enums/mime-types.enum';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiConflictResponse,
@@ -57,6 +58,7 @@ export class BooksController {
   constructor(private readonly booksService: BooksService) {}
 
   @Post()
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new book' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -147,6 +149,7 @@ export class BooksController {
   }
 
   @Patch(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update an existing book' })
   @ApiParam({
     name: 'id',
@@ -201,6 +204,7 @@ export class BooksController {
   }
 
   @Delete(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Soft delete a book (set active=false)' })
   @ApiParam({
     name: 'id',
@@ -216,6 +220,7 @@ export class BooksController {
   }
 
   @Post('reactivate')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Reactivate a previously soft-deleted book' })
   @ApiBody({
     schema: {

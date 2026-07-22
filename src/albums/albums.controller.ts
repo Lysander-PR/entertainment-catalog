@@ -28,6 +28,7 @@ import { FileValidationPipe } from '@/files/pipes/file-validation.pipe';
 import { MimeTypes } from '@/files/types/enums/mime-types.enum';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiConflictResponse,
   ApiConsumes,
@@ -56,6 +57,7 @@ export class AlbumsController {
   constructor(private readonly albumsService: AlbumsService) {}
 
   @Post()
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new album with songs' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -106,6 +108,7 @@ export class AlbumsController {
   }
 
   @Post('reactivate')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Reactivate a previously soft-deleted album' })
   @ApiBody({
     schema: {
@@ -170,6 +173,7 @@ export class AlbumsController {
   }
 
   @Patch(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update an existing album' })
   @ApiParam({
     name: 'id',
@@ -223,6 +227,7 @@ export class AlbumsController {
   }
 
   @Delete(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Soft delete an album (set active=false)' })
   @ApiParam({
     name: 'id',

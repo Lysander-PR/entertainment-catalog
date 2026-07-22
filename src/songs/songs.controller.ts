@@ -23,6 +23,7 @@ import { SongResponseWithoutRelationsDto } from './dto/song-response-without-rel
 import { UpdateValuesMissingErrorFilter } from '@/common/filters/update-values-missing.error.filter';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiConflictResponse,
   ApiNotFoundResponse,
@@ -34,7 +35,6 @@ import {
 } from '@nestjs/swagger';
 import { SONGS_PATH } from './types/consts/songs.const';
 import { Auth } from '@/auth/decorator/auth.decorator';
-import { Roles } from '@/user/types/enums/roles.enum';
 
 @ApiTags('Songs')
 @Controller(SONGS_PATH)
@@ -45,6 +45,7 @@ export class SongsController {
   constructor(private readonly songsService: SongsService) {}
 
   @Post()
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new song' })
   @ApiOkResponse({ description: 'Song created successfully', type: Song })
   @ApiBadRequestResponse({ description: 'Invalid payload' })
@@ -52,12 +53,13 @@ export class SongsController {
     description:
       'Song title already exists in the same album or album does not exist',
   })
-  @Auth(Roles.ADMIN, Roles.USER)
+  @Auth()
   create(@Body() createSongDto: CreateSongDto) {
     return this.songsService.create(createSongDto);
   }
 
   @Post('reactivate')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Reactivate a previously soft-deleted song' })
   @ApiBody({
     schema: {
@@ -75,7 +77,7 @@ export class SongsController {
   @ApiOkResponse({ description: 'Song reactivated successfully', type: Song })
   @ApiNotFoundResponse({ description: 'Song not found' })
   @ApiBadRequestResponse({ description: 'Invalid UUID format' })
-  @Auth(Roles.ADMIN, Roles.USER)
+  @Auth()
   reactivate(@Body('id', ParseUUIDPipe) id: string) {
     return this.songsService.reactivate(id);
   }
@@ -121,6 +123,7 @@ export class SongsController {
   }
 
   @Patch(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update an existing song' })
   @ApiParam({
     name: 'id',
@@ -136,7 +139,7 @@ export class SongsController {
   @ApiConflictResponse({
     description: 'Song title already exists in the same album',
   })
-  @Auth(Roles.ADMIN, Roles.USER)
+  @Auth()
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateSongDto: UpdateSongDto,
@@ -145,6 +148,7 @@ export class SongsController {
   }
 
   @Delete(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Soft delete a song (set active=false)' })
   @ApiParam({
     name: 'id',
@@ -159,7 +163,7 @@ export class SongsController {
   @ApiNotFoundResponse({ description: 'Song not found' })
   @ApiBadRequestResponse({ description: 'Invalid UUID format' })
   @SerializeOptions({ type: SongResponseWithoutRelationsDto })
-  @Auth(Roles.ADMIN, Roles.USER)
+  @Auth()
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.songsService.remove(id);
   }

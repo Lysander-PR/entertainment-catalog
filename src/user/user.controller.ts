@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiNotFoundResponse,
@@ -56,6 +57,7 @@ export class UserController {
   }
 
   @Get(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get one active user by id' })
   @ApiParam({
     name: 'id',
@@ -71,6 +73,7 @@ export class UserController {
   }
 
   @Patch(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update an existing user' })
   @ApiParam({
     name: 'id',
@@ -94,6 +97,7 @@ export class UserController {
   }
 
   @Delete(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Soft delete a user (set active=false)' })
   @ApiParam({
     name: 'id',
@@ -109,6 +113,7 @@ export class UserController {
   }
 
   @Post('reactivate')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Reactivate a previously soft-deleted user' })
   @ApiOkResponse({ description: 'User reactivated', type: User })
   @ApiNotFoundResponse({ description: 'User not found' })

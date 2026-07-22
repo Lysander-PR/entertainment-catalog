@@ -19,6 +19,7 @@ import { UpdateGenreDto } from './dto/update-genre.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -40,6 +41,7 @@ export class GenresController {
   constructor(private readonly genresService: GenresService) {}
 
   @Post()
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new genre' })
   @ApiOkResponse({ description: 'Genre created successfully', type: Genre })
   @ApiBadRequestResponse({ description: 'Invalid payload' })
@@ -91,6 +93,7 @@ export class GenresController {
   }
 
   @Patch(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update an existing genre' })
   @ApiParam({
     name: 'id',
@@ -112,6 +115,7 @@ export class GenresController {
   }
 
   @Delete(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a genre by id' })
   @ApiParam({
     name: 'id',

@@ -51,7 +51,10 @@ export class FilesController {
 
   @Post('upload')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Upload a file and create a cover record' })
+  @ApiOperation({
+    summary: 'Upload a file and create a cover record',
+    description: 'Requires ADMIN role.',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -88,7 +91,10 @@ export class FilesController {
 
   @Delete(':id')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete a file by id' })
+  @ApiOperation({
+    summary: 'Delete a file by id',
+    description: 'Requires ADMIN role.',
+  })
   @ApiParam({
     name: 'id',
     type: String,
@@ -140,7 +146,10 @@ export class FilesController {
 
   @Patch(':id')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Replace an existing file by id' })
+  @ApiOperation({
+    summary: 'Replace an existing file by id',
+    description: 'Requires ADMIN role.',
+  })
   @ApiParam({
     name: 'id',
     type: String,

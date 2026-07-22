@@ -58,7 +58,10 @@ export class UserController {
 
   @Get(':id')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get one active user by id' })
+  @ApiOperation({
+    summary: 'Get one active user by id',
+    description: 'Requires ADMIN or USER role.',
+  })
   @ApiParam({
     name: 'id',
     type: String,
@@ -74,7 +77,10 @@ export class UserController {
 
   @Patch(':id')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update an existing user' })
+  @ApiOperation({
+    summary: 'Update an existing user',
+    description: 'Requires ADMIN or USER role.',
+  })
   @ApiParam({
     name: 'id',
     type: String,
@@ -98,7 +104,10 @@ export class UserController {
 
   @Delete(':id')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Soft delete a user (set active=false)' })
+  @ApiOperation({
+    summary: 'Soft delete a user (set active=false)',
+    description: 'Requires ADMIN or USER role.',
+  })
   @ApiParam({
     name: 'id',
     type: String,
@@ -114,7 +123,10 @@ export class UserController {
 
   @Post('reactivate')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Reactivate a previously soft-deleted user' })
+  @ApiOperation({
+    summary: 'Reactivate a previously soft-deleted user',
+    description: 'Requires ADMIN or USER role.',
+  })
   @ApiOkResponse({ description: 'User reactivated', type: User })
   @ApiNotFoundResponse({ description: 'User not found' })
   @ApiBadRequestResponse({ description: 'Invalid UUID format' })

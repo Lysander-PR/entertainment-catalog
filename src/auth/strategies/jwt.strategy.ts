@@ -23,7 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload): Promise<User> {
     try {
-      return this.userService.findOne(payload.sub);
+      return await this.userService.findOne(payload.sub);
     } catch {
       throw new UnauthorizedException('Token not valid');
     }

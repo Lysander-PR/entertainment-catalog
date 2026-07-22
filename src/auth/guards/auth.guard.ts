@@ -10,11 +10,25 @@ import { AuthGuard } from '@nestjs/passport';
 import { User } from '@/user/entities/user.entity';
 import { Roles } from '@/user/types/enums/roles.enum';
 import { META_ROLES } from 'src/auth/types/consts/meta-roles.const';
+import { IS_PUBLIC_KEY } from 'src/auth/types/consts/public-key.const';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   constructor(private readonly reflector: Reflector) {
     super();
+  }
+
+  canActivate(context: ExecutionContext) {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (isPublic) {
+      return true;
+    }
+
+    return super.canActivate(context);
   }
 
   handleRequest<TUser = User>(
@@ -28,10 +42,10 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     }
 
     const currentUser = user as unknown as User;
-    const validRoles = this.reflector.get<Roles[]>(
-      META_ROLES,
+    const validRoles = this.reflector.getAllAndOverride<Roles[]>(META_ROLES, [
       context.getHandler(),
-    );
+      context.getClass(),
+    ]);
 
     if (validRoles?.length && !validRoles.includes(currentUser.rol)) {
       throw new ForbiddenException(

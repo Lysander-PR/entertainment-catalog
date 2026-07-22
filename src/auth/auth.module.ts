@@ -6,10 +6,15 @@ import { envs } from '@/config/envs';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { JWT_SECRET } from './types/consts/auth.const';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    { provide: JWT_SECRET, useValue: envs.JWT_SECRET },
+  ],
   imports: [
     UserModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),

@@ -1,17 +1,21 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
-import { envs } from '@/config/envs';
+import { JWT_SECRET } from '@/auth/types/consts/auth.const';
 import { JwtPayload } from '@/auth/types/interfaces/jwt-payload.interface';
 import { UserService } from '@/user/user.service';
 import { User } from '@/user/entities/user.entity';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private userService: UserService) {
+  constructor(
+    @Inject(JWT_SECRET) jwtSecret: string,
+    private userService: UserService,
+  ) {
     super({
-      secretOrKey: envs.JWT_SECRET,
+      secretOrKey: jwtSecret,
       ignoreExpiration: false,
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
     });

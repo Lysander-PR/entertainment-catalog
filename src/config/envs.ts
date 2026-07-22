@@ -1,8 +1,9 @@
+import { existsSync } from 'fs';
 import { z } from 'zod';
 
 const isProd = process.env.NODE_ENV === 'prod';
 
-if (!isProd) {
+if (!isProd && existsSync('.env')) {
   process.loadEnvFile();
 }
 

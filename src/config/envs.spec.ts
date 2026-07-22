@@ -1,8 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-require-imports */
-// envs.ts reads process.env as soon as it is imported, so to test it with
-// different values we reload it fresh in every test using require() instead
-// of a normal import. jest.resetModules() forces that fresh reload.
 
 describe('envs', () => {
   const validEnv = {

@@ -14,18 +14,18 @@ import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { GENRES_PATH } from './types/consts/genres.const';
-import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
+import { CacheKey } from '@/common/abstracts/cache-key.abstract';
 
 @Injectable()
-export class GenresService {
-  private readonly cacheKey = `/${APP_PREFIX}/${GENRES_PATH}`;
-
+export class GenresService extends CacheKey {
   constructor(
     @InjectRepository(Genre)
     private readonly genreRepository: Repository<Genre>,
     @Inject(CACHE_MANAGER)
     private readonly cacheManager: Cache,
-  ) {}
+  ) {
+    super(GENRES_PATH);
+  }
 
   async create(createGenreDto: CreateGenreDto): Promise<Genre> {
     const genre = await this.genreRepository.save({

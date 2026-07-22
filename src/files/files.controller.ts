@@ -25,6 +25,7 @@ import { ALLOWED_ALL_MIME_TYPES } from './types/enums/mime-types.enum';
 import { Cover } from './entities/cover.entity';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiForbiddenResponse,
@@ -37,15 +38,23 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Auth } from '@/auth/decorator/auth.decorator';
+import { Roles } from '@/user/types/enums/roles.enum';
+import { Public } from '@/auth/decorator/public.decorator';
 
 @ApiTags('Files')
 @Controller('files')
 @UseFilters(QueryFailedErrorFilter, StorageApiFilter)
+@Auth(Roles.ADMIN)
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
   @Post('upload')
-  @ApiOperation({ summary: 'Upload a file and create a cover record' })
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Upload a file and create a cover record',
+    description: 'Requires ADMIN role.',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -81,7 +90,11 @@ export class FilesController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a file by id' })
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Delete a file by id',
+    description: 'Requires ADMIN role.',
+  })
   @ApiParam({
     name: 'id',
     type: String,
@@ -122,6 +135,7 @@ export class FilesController {
     description: 'Insufficient permissions to access storage',
   })
   @ApiInternalServerErrorResponse({ description: 'Storage operation failed' })
+  @Public()
   async getFile(@Param('id', ParseUUIDPipe) id: string) {
     const blob = await this.filesService.getFile(id);
     const buffer = Buffer.from(await blob.arrayBuffer());
@@ -131,7 +145,11 @@ export class FilesController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Replace an existing file by id' })
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Replace an existing file by id',
+    description: 'Requires ADMIN role.',
+  })
   @ApiParam({
     name: 'id',
     type: String,

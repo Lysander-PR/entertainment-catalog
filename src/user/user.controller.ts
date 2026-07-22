@@ -1,0 +1,136 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseFilters,
+  ClassSerializerInterceptor,
+  UseInterceptors,
+  SerializeOptions,
+  ParseUUIDPipe,
+} from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
+
+import { User } from './entities/user.entity';
+import { UserService } from './user.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { QueryFailedErrorFilter } from '@/common/filters/query-failed.filter';
+import { UpdateValuesMissingErrorFilter } from '@/common/filters/update-values-missing.error.filter';
+import { USER_PATH } from './types/consts/user.const';
+import { Auth } from '@/auth/decorator/auth.decorator';
+import { Roles } from './types/enums/roles.enum';
+import { Public } from '@/auth/decorator/public.decorator';
+
+@ApiTags('User')
+@Controller(USER_PATH)
+@UseFilters(QueryFailedErrorFilter, UpdateValuesMissingErrorFilter)
+@UseInterceptors(ClassSerializerInterceptor)
+@SerializeOptions({ type: User })
+@Auth(Roles.ADMIN, Roles.USER)
+export class UserController {
+  constructor(private readonly userService: UserService) {}
+
+  @Post()
+  @ApiOperation({ summary: 'Create a new user' })
+  @ApiCreatedResponse({ description: 'User created successfully', type: User })
+  @ApiBadRequestResponse({ description: 'Invalid payload' })
+  @ApiConflictResponse({
+    description: 'The email or username already belongs to another user',
+  })
+  @Public()
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.userService.create(createUserDto);
+  }
+
+  @Get(':id')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get one active user by id',
+    description: 'Requires ADMIN or USER role.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    format: 'uuid',
+    description: 'User id',
+  })
+  @ApiOkResponse({ description: 'User found', type: User })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  @ApiBadRequestResponse({ description: 'Invalid UUID format' })
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.userService.findOne(id);
+  }
+
+  @Patch(':id')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Update an existing user',
+    description: 'Requires ADMIN or USER role.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    format: 'uuid',
+    description: 'User id',
+  })
+  @ApiOkResponse({ description: 'User updated successfully', type: User })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  @ApiBadRequestResponse({
+    description: 'Invalid UUID format or empty update body',
+  })
+  @ApiConflictResponse({
+    description: 'The email or username already belongs to another user',
+  })
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return this.userService.update(id, updateUserDto);
+  }
+
+  @Delete(':id')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Soft delete a user (set active=false)',
+    description: 'Requires ADMIN or USER role.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    format: 'uuid',
+    description: 'User id',
+  })
+  @ApiOkResponse({ description: 'User soft deleted', type: User })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  @ApiBadRequestResponse({ description: 'Invalid UUID format' })
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.userService.softRemove(id);
+  }
+
+  @Post('reactivate')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Reactivate a previously soft-deleted user',
+    description: 'Requires ADMIN or USER role.',
+  })
+  @ApiOkResponse({ description: 'User reactivated', type: User })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  @ApiBadRequestResponse({ description: 'Invalid UUID format' })
+  reactivate(@Body('id', ParseUUIDPipe) id: string) {
+    return this.userService.reactivate(id);
+  }
+}

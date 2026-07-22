@@ -19,6 +19,7 @@ import { UpdateGenreDto } from './dto/update-genre.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -29,14 +30,18 @@ import {
 } from '@nestjs/swagger';
 import { Genre } from './entities/genre.entity';
 import { GENRES_PATH } from './types/consts/genres.const';
+import { Auth } from '@/auth/decorator/auth.decorator';
+import { Public } from '@/auth/decorator/public.decorator';
 
 @ApiTags('Genres')
 @Controller(GENRES_PATH)
 @UseFilters(QueryFailedErrorFilter, UpdateValuesMissingErrorFilter)
+@Auth()
 export class GenresController {
   constructor(private readonly genresService: GenresService) {}
 
   @Post()
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new genre' })
   @ApiOkResponse({ description: 'Genre created successfully', type: Genre })
   @ApiBadRequestResponse({ description: 'Invalid payload' })
@@ -66,6 +71,7 @@ export class GenresController {
     type: Genre,
     isArray: true,
   })
+  @Public()
   find(@Query() paginationDto: PaginationDto) {
     return this.genresService.find(paginationDto);
   }
@@ -81,11 +87,13 @@ export class GenresController {
   @ApiOkResponse({ description: 'Genre found', type: Genre })
   @ApiNotFoundResponse({ description: 'Genre not found' })
   @ApiBadRequestResponse({ description: 'Invalid UUID format' })
+  @Public()
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.genresService.findOne(id);
   }
 
   @Patch(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update an existing genre' })
   @ApiParam({
     name: 'id',
@@ -107,6 +115,7 @@ export class GenresController {
   }
 
   @Delete(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a genre by id' })
   @ApiParam({
     name: 'id',

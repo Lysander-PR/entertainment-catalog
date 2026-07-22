@@ -16,18 +16,18 @@ import { PaginationDto } from '@/common/dto/pagination.dto';
 import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params.interface';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { SONGS_PATH } from './types/consts/songs.const';
-import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
+import { CacheKey } from '@/common/abstracts/cache-key.abstract';
 
 @Injectable()
-export class SongsService {
-  private readonly cacheKey = `/${APP_PREFIX}/${SONGS_PATH}`;
-
+export class SongsService extends CacheKey {
   constructor(
     @InjectRepository(Song)
     private readonly songRepository: Repository<Song>,
     @Inject(CACHE_MANAGER)
     private readonly cacheManager: Cache,
-  ) {}
+  ) {
+    super(SONGS_PATH);
+  }
 
   async create(createSongDto: CreateSongDto): Promise<Song> {
     await this.checkDuplicates({

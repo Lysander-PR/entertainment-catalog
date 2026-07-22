@@ -28,6 +28,7 @@ import { FileValidationPipe } from '@/files/pipes/file-validation.pipe';
 import { MimeTypes } from '@/files/types/enums/mime-types.enum';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiConflictResponse,
   ApiConsumes,
@@ -39,6 +40,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ALBUMS_PATH } from './types/consts/albums.const';
+import { Auth } from '@/auth/decorator/auth.decorator';
+import { Public } from '@/auth/decorator/public.decorator';
 
 @ApiTags('Albums')
 @Controller(ALBUMS_PATH)
@@ -49,10 +52,12 @@ import { ALBUMS_PATH } from './types/consts/albums.const';
 )
 @UseInterceptors(ClassSerializerInterceptor)
 @SerializeOptions({ type: Album })
+@Auth()
 export class AlbumsController {
   constructor(private readonly albumsService: AlbumsService) {}
 
   @Post()
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new album with songs' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -103,6 +108,7 @@ export class AlbumsController {
   }
 
   @Post('reactivate')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Reactivate a previously soft-deleted album' })
   @ApiBody({
     schema: {
@@ -145,6 +151,7 @@ export class AlbumsController {
     type: Album,
     isArray: true,
   })
+  @Public()
   find(@Query() paginationDto: PaginationDto) {
     return this.albumsService.find(paginationDto);
   }
@@ -160,11 +167,13 @@ export class AlbumsController {
   @ApiOkResponse({ description: 'Album found', type: Album })
   @ApiNotFoundResponse({ description: 'Album not found' })
   @ApiBadRequestResponse({ description: 'Invalid UUID format' })
+  @Public()
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.albumsService.findOne(id);
   }
 
   @Patch(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update an existing album' })
   @ApiParam({
     name: 'id',
@@ -218,6 +227,7 @@ export class AlbumsController {
   }
 
   @Delete(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Soft delete an album (set active=false)' })
   @ApiParam({
     name: 'id',

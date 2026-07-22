@@ -21,13 +21,10 @@ import { Cover } from '@/files/entities/cover.entity';
 import { Song } from '@/songs/entities/song.entity';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ALBUMS_PATH } from './types/consts/albums.const';
-import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
+import { EntertainmentStorage } from '@/common/abstracts/entertainment-storage.abstract';
 
 @Injectable()
-export class AlbumsService {
-  private readonly storageFolder = 'albums';
-  private readonly cacheKey = `/${APP_PREFIX}/${ALBUMS_PATH}`;
-
+export class AlbumsService extends EntertainmentStorage {
   constructor(
     @InjectRepository(Album)
     private readonly albumRepository: Repository<Album>,
@@ -35,7 +32,9 @@ export class AlbumsService {
     private readonly dataSource: DataSource,
     @Inject(CACHE_MANAGER)
     private readonly cacheManager: Cache,
-  ) {}
+  ) {
+    super(ALBUMS_PATH);
+  }
 
   async create(
     createAlbumDto: CreateAlbumDto,

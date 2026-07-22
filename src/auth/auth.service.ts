@@ -32,19 +32,23 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
-    const user = await this.userService.findOne(loginDto.email);
+    try {
+      const user = await this.userService.findOne(loginDto.email);
 
-    if (!isMatchEncrypted(loginDto.password, user.password)) {
+      if (!isMatchEncrypted(loginDto.password, user.password)) {
+        throw new Error();
+      }
+
+      return {
+        user,
+        access_token: this.generateJwtToken({
+          sub: user.id,
+          email: user.email,
+        }),
+      };
+    } catch {
       throw new BadRequestException('Credentials are not valid');
     }
-
-    return {
-      user,
-      access_token: this.generateJwtToken({
-        sub: user.id,
-        email: user.email,
-      }),
-    };
   }
 
   private generateJwtToken(payload: JwtPayload): string {

@@ -17,9 +17,7 @@ describe('CreateSongDto', () => {
     dto.composer = 123 as unknown as string;
 
     const errors = await validate(dto);
-    const composerError = errors.find(
-      (error) => error.property === 'composer',
-    );
+    const composerError = errors.find((error) => error.property === 'composer');
 
     expect(composerError).toBeDefined();
     expect(composerError?.constraints).toHaveProperty('isString');
@@ -29,9 +27,7 @@ describe('CreateSongDto', () => {
     const dto = buildDto({ composer: '' });
 
     const errors = await validate(dto);
-    const composerError = errors.find(
-      (error) => error.property === 'composer',
-    );
+    const composerError = errors.find((error) => error.property === 'composer');
 
     expect(composerError).toBeDefined();
     expect(composerError?.constraints).toHaveProperty('minLength');
@@ -41,9 +37,7 @@ describe('CreateSongDto', () => {
     const dto = buildDto({ composer: 'a'.repeat(31) });
 
     const errors = await validate(dto);
-    const composerError = errors.find(
-      (error) => error.property === 'composer',
-    );
+    const composerError = errors.find((error) => error.property === 'composer');
 
     expect(composerError).toBeDefined();
     expect(composerError?.constraints).toHaveProperty('maxLength');

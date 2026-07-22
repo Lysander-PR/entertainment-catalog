@@ -16,9 +16,7 @@ describe('UpdateMovieDto', () => {
     dto.director = 'Denis3';
 
     const errors = await validate(dto);
-    const directorError = errors.find(
-      (error) => error.property === 'director',
-    );
+    const directorError = errors.find((error) => error.property === 'director');
 
     expect(directorError).toBeDefined();
     expect(directorError?.constraints).toHaveProperty('matches');

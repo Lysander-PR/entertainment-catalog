@@ -22,9 +22,7 @@ describe('CreateMovieDto', () => {
     dto.director = 123 as unknown as string;
 
     const errors = await validate(dto);
-    const directorError = errors.find(
-      (error) => error.property === 'director',
-    );
+    const directorError = errors.find((error) => error.property === 'director');
 
     expect(directorError).toBeDefined();
     expect(directorError?.constraints).toHaveProperty('isString');
@@ -34,9 +32,7 @@ describe('CreateMovieDto', () => {
     const dto = buildDto({ director: 'Denis3' });
 
     const errors = await validate(dto);
-    const directorError = errors.find(
-      (error) => error.property === 'director',
-    );
+    const directorError = errors.find((error) => error.property === 'director');
 
     expect(directorError).toBeDefined();
     expect(directorError?.constraints).toHaveProperty('matches');
@@ -46,9 +42,7 @@ describe('CreateMovieDto', () => {
     const dto = buildDto({ director: 'a'.repeat(31) });
 
     const errors = await validate(dto);
-    const directorError = errors.find(
-      (error) => error.property === 'director',
-    );
+    const directorError = errors.find((error) => error.property === 'director');
 
     expect(directorError).toBeDefined();
     expect(directorError?.constraints).toHaveProperty('maxLength');

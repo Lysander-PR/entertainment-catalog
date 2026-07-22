@@ -58,9 +58,7 @@ describe('CreateBookDto', () => {
     const dto = buildDto();
 
     const errors = await validate(dto);
-    const coWriterError = errors.find(
-      (error) => error.property === 'coWriter',
-    );
+    const coWriterError = errors.find((error) => error.property === 'coWriter');
 
     expect(coWriterError).toBeUndefined();
   });
@@ -69,9 +67,7 @@ describe('CreateBookDto', () => {
     const dto = buildDto({ coWriter: 'Juan3' });
 
     const errors = await validate(dto);
-    const coWriterError = errors.find(
-      (error) => error.property === 'coWriter',
-    );
+    const coWriterError = errors.find((error) => error.property === 'coWriter');
 
     expect(coWriterError).toBeDefined();
     expect(coWriterError?.constraints).toHaveProperty('matches');

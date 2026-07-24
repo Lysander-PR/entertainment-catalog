@@ -13,8 +13,5 @@ export const AppDataSource = new DataSource({
   migrations: ['src/database/migrations/*-migration.ts'],
   migrationsRun: false,
   logging: true,
-  ssl: isProd,
-  extra: {
-    ssl: isProd ? { rejectUnauthorized: true } : null,
-  },
+  ssl: isProd ? { rejectUnauthorized: false } : false,
 });

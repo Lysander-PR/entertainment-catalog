@@ -6,6 +6,7 @@ services:
       - ${PORT}:3000
     restart: always
     environment:
+      - NODE_ENV=prod
       - PORT=${PORT}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
@@ -16,6 +17,7 @@ services:
       - SUPABASE_KEY=${SUPABASE_KEY}
       - SUPABASE_BUCKET=${SUPABASE_BUCKET}
       - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
   redis:
     container_name: redis-server
     image: redis:8.6.3

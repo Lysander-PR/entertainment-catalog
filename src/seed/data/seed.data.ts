@@ -37,6 +37,7 @@ const initialAlbums: SeedAlbum[] = [
     studio: 'cold busted',
     releaseDate: new Date('2012-07-02'),
     album: 'blueberry hill',
+    coverPath: 'albums/bogie-belgique-blueberry_hill.jpg',
     songs: [
       {
         title: 'dance with the democrat',
@@ -105,6 +106,7 @@ const initialAlbums: SeedAlbum[] = [
     studio: 'independent',
     releaseDate: new Date('2017-09-03'),
     album: 'sleepwalk',
+    coverPath: 'albums/bojet-sleepwalk.jpg',
     songs: [
       {
         title: 'sleepwalk',
@@ -163,6 +165,7 @@ const initialAlbums: SeedAlbum[] = [
     studio: 'independent',
     releaseDate: new Date('2015-09-06'),
     album: 'interrupt 5 - EP',
+    coverPath: 'albums/tusken-interrupt-5.jpg',
     songs: [
       {
         title: 'lava',
@@ -226,6 +229,7 @@ const initialAlbums: SeedAlbum[] = [
     studio: 'riverside studios',
     releaseDate: new Date('2006-10-03'),
     album: 'rodrigo y gabriela',
+    coverPath: 'albums/rodrigo-y-gabriela.jpg',
     songs: [
       {
         title: 'tamacun',
@@ -279,6 +283,7 @@ const initialAlbums: SeedAlbum[] = [
     studio: 'fox searchlight pictures',
     releaseDate: new Date('2013-11-11'),
     album: 'in the house - in a heartbeat',
+    coverPath: 'albums/john-murphy-in-the-house-in-a-heartbeat.jpg',
     songs: [
       {
         title: 'in the house - in a heartbeat',
@@ -294,6 +299,7 @@ const initialBooks: SeedBook[] = [
     author: 'guillermo arriaga',
     title: 'el hombre',
     publisher: 'alfaguara',
+    coverPath: 'books/guillermo_arriaga_el_hombre.jpg',
     releaseDate: new Date('2025-05-12'),
   },
   {
@@ -301,24 +307,28 @@ const initialBooks: SeedBook[] = [
     title: 'el salvaje',
     publisher: 'alfaguara',
     releaseDate: new Date('2016-10-01'),
+    coverPath: 'books/guillermo-arriaga-el-salvaje.jpg',
   },
   {
     author: 'guillermo arriaga',
     title: 'salvar el fuego',
     publisher: 'alfaguara',
     releaseDate: new Date('2020-03-19'),
+    coverPath: 'books/guillermo-arriaga-salvar-el-fuego.jpg',
   },
   {
     author: 'john katzenbach',
     title: 'the analyst',
     publisher: 'ballantine books',
     releaseDate: new Date('2002-01-29'),
+    coverPath: 'books/john-katzenbach-the-analyst.jpg',
   },
   {
     author: 'franz kafka',
     title: 'the metamorphosis',
     publisher: 'penguin classics',
     releaseDate: new Date('1915-10-01'),
+    coverPath: 'books/franz-kafka-the-metamorphosis.jpg',
   },
 ];
 
@@ -330,6 +340,7 @@ const initialMovies: SeedMovie[] = [
     studio: 'wild bunch',
     writer: 'guillermo arriaga',
     releaseDate: new Date('2010-07-23'),
+    coverPath: 'movies/guillermo-arriaga-the-burning-plain-poster.jpg',
   },
   {
     title: 'babel',
@@ -338,6 +349,7 @@ const initialMovies: SeedMovie[] = [
     studio: 'central films',
     writer: 'guillermo arriaga',
     releaseDate: new Date('2006-11-10'),
+    coverPath: 'movies/guillermo-arriaga-babel.jpg',
   },
   {
     title: 'prisioners',
@@ -348,6 +360,7 @@ const initialMovies: SeedMovie[] = [
     releaseDate: new Date('2013-11-08'),
     soundtrack:
       'https://open.spotify.com/album/5MdxtYNgZJiZMegeZ3Qe1U?si=CQ7Tp7PnQ2SXtvMhioaITQ',
+    coverPath: 'movies/denis-villeneuve-prisoners.jpg',
   },
   {
     title: 'cloverfield',
@@ -356,6 +369,7 @@ const initialMovies: SeedMovie[] = [
     studio: 'paramount pictures',
     writer: 'drew goddard',
     releaseDate: new Date('2008-01-18'),
+    coverPath: 'movies/matt-reeves-cloverfield.jpg',
   },
   {
     title: 'alien',
@@ -366,6 +380,7 @@ const initialMovies: SeedMovie[] = [
     releaseDate: new Date('1979-05-25'),
     soundtrack:
       'https://open.spotify.com/album/2ubcKYeOHGJ5UHHNBAuaKb?si=8coGNTdZTH2WzKg7Oa7mMw',
+    coverPath: 'movies/ridley-scott-alien.jpg',
   },
 ];
 

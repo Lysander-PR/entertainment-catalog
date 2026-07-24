@@ -24,6 +24,7 @@ export function saveAlbums(
       releaseDate: seedAlbum.releaseDate,
       studio: seedAlbum.studio,
       artist: seedAlbum.artist,
+      cover: seedAlbum.coverPath ? { file: seedAlbum.coverPath } : undefined,
     })),
   );
 

@@ -6,10 +6,12 @@ import { Genre } from '@/genres/entities/genre.entity';
 import { Book } from '@/books/entities/book.entity';
 import { Movie } from '@/movies/entities/movie.entity';
 import { Song } from '@/songs/entities/song.entity';
+import { Cover } from '@/files/entities/cover.entity';
 
 import { initialData } from './data/seed.data';
 import { SaveMusicParams } from './types/interfaces/save-entities.interface';
 import { saveAlbums, saveGenres, saveSongs } from './helpers/save-music.helper';
+import { isProd } from '@/config/envs';
 
 @Injectable()
 export class SeedService {
@@ -18,8 +20,7 @@ export class SeedService {
   constructor(private readonly dataService: DataSource) {}
 
   async populate() {
-    const nodeEnv = process.env.NODE_ENV;
-    if (nodeEnv === 'production') {
+    if (isProd) {
       this.logger.warn('Seed execution blocked in production environment');
       throw new Error('Cannot execute seed in production environment');
     }
@@ -36,12 +37,29 @@ export class SeedService {
         await manager.getRepository(Genre).deleteAll();
         await manager.getRepository(Book).deleteAll();
         await manager.getRepository(Movie).deleteAll();
+        await manager.getRepository(Cover).deleteAll();
 
         this.logger.debug('Inserting movies...');
-        const savedMovies = await manager.save(manager.create(Movie, movies));
+        const savedMovies = await manager.save(
+          manager.create(
+            Movie,
+            movies.map(({ coverPath, ...movie }) => ({
+              ...movie,
+              poster: coverPath ? { file: coverPath } : undefined,
+            })),
+          ),
+        );
 
         this.logger.debug('Inserting books...');
-        const savedBooks = await manager.save(manager.create(Book, books));
+        const savedBooks = await manager.save(
+          manager.create(
+            Book,
+            books.map(({ coverPath, ...book }) => ({
+              ...book,
+              cover: coverPath ? { file: coverPath } : undefined,
+            })),
+          ),
+        );
 
         this.logger.debug('Inserting music data...');
         const musicResult = await this.saveMusic({
@@ -56,6 +74,9 @@ export class SeedService {
           genres: musicResult.genres.length,
           albums: musicResult.albums.length,
           songs: musicResult.songs.length,
+          covers: [...movies, ...books, ...albums].filter(({ coverPath }) =>
+            Boolean(coverPath),
+          ).length,
         };
       },
     );

@@ -5,25 +5,27 @@ export interface SeedSong {
   genre: string;
 }
 
-export interface SeedAlbum {
+export interface SeedWithCover {
+  coverPath?: string;
+}
+
+export interface SeedAlbum extends SeedWithCover {
   album: string;
   releaseDate: Date;
   studio: string;
   artist: string;
   songs: SeedSong[];
-  coverUrl?: string;
 }
 
-export interface SeedBook {
+export interface SeedBook extends SeedWithCover {
   author: string;
   coWriter?: string;
   title: string;
   releaseDate: Date;
   publisher: string;
-  coverUrl?: string;
 }
 
-export interface SeedMovie {
+export interface SeedMovie extends SeedWithCover {
   director: string;
   title: string;
   writer: string;
@@ -31,7 +33,6 @@ export interface SeedMovie {
   protagonist: string;
   releaseDate: Date;
   soundtrack?: string;
-  coverUrl?: string;
 }
 
 export interface SeedData {

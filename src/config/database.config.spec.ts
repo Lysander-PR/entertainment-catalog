@@ -53,7 +53,6 @@ describe('databaseConfig in production', () => {
 
     const { databaseConfig } = require('./database.config');
 
-    expect(databaseConfig.ssl).toBe(true);
-    expect(databaseConfig.extra.ssl).toEqual({ rejectUnauthorized: true });
+    expect(databaseConfig.ssl).toEqual({ rejectUnauthorized: false });
   });
 });

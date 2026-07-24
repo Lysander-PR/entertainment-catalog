@@ -59,13 +59,13 @@ describe('Books (e2e)', () => {
   });
 
   afterAll(async () => {
-    if (bookIds.length) {
-      await dataSource.getRepository(Book).delete(bookIds);
-    }
-    if (coverIds.length) {
-      await dataSource.getRepository(Cover).delete(coverIds);
-    }
-    await dataSource.getRepository(User).delete({ email: testingUser.email });
+    // if (bookIds.length) {
+    //   await dataSource.getRepository(Book).delete(bookIds);
+    // }
+    // if (coverIds.length) {
+    //   await dataSource.getRepository(Cover).delete(coverIds);
+    // }
+    // await dataSource.getRepository(User).delete({ email: testingUser.email });
     await appTest.close();
   });
 

@@ -44,6 +44,7 @@ describe('SongsService', () => {
   beforeEach(async () => {
     const repositoryMock = {
       save: jest.fn(),
+      create: jest.fn(),
       find: jest.fn(),
       findOne: jest.fn(),
       findOneBy: jest.fn(),
@@ -83,6 +84,7 @@ describe('SongsService', () => {
 
   it('should create a song and invalidate the cache', async () => {
     jest.spyOn(repository, 'findOneBy').mockResolvedValue(null);
+    jest.spyOn(repository, 'create').mockReturnValue(mockSong);
     jest.spyOn(repository, 'save').mockResolvedValue(mockSong);
 
     const result = await service.create(dto);
@@ -92,7 +94,8 @@ describe('SongsService', () => {
       albumId: dto.albumId,
       title: capitalize(dto.title),
     });
-    expect(repository.save).toHaveBeenCalledWith(dto);
+    expect(repository.create).toHaveBeenCalledWith(dto);
+    expect(repository.save).toHaveBeenCalledWith(mockSong);
     expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
     expect(result).toEqual(mockSong);
   });

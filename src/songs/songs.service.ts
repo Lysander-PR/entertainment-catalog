@@ -35,9 +35,10 @@ export class SongsService extends CacheKey {
       title: createSongDto.title,
     });
 
-    const song = await this.songRepository.save(createSongDto);
+    const song = this.songRepository.create(createSongDto);
+    const songSaved = await this.songRepository.save(song);
     await this.cacheManager.del(this.cacheKey);
-    return song;
+    return songSaved;
   }
 
   findAll({ limit, page }: PaginationDto): Promise<Song[]> {

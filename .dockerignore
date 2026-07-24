@@ -1,6 +1,23 @@
-.vs-code
-dist
+# Dependencias y artefactos
 node_modules
+dist
+coverage
 postgres
 
+# Pruebas
+test
+**/*.spec.ts
+**/*.e2e-spec.ts
+
+# Entorno y secretos
+.env
+.env.*
+
+# Metadatos de repo y editor
+.git
+.gitignore
+.github
+.vscode
+.vs-code
 .node-version
+README.md

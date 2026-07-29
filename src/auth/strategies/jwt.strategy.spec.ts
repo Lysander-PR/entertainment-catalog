@@ -7,6 +7,7 @@ import { JWT_SECRET } from '@/auth/types/consts/auth.const';
 import { JwtPayload } from '@/auth/types/interfaces/jwt-payload.interface';
 import { User } from '@/user/entities/user.entity';
 import { UnauthorizedException } from '@nestjs/common';
+import { generateUUID } from '@/common/helpers/generate-uuid.util';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
@@ -40,7 +41,11 @@ describe('JwtStrategy', () => {
   });
 
   it('should return a user if exists and is active', async () => {
-    const payload: JwtPayload = { sub: '1', email: 'test@example.com' };
+    const payload: JwtPayload = {
+      sub: '1',
+      email: 'test@example.com',
+      jti: generateUUID(),
+    };
     const mockUser = { id: '1', email: 'test@example.com' } as User;
 
     jest.spyOn(userService, 'findOne').mockResolvedValue(mockUser);
@@ -51,7 +56,11 @@ describe('JwtStrategy', () => {
   });
 
   it('should throw UnauthorizedException if user does not exist', async () => {
-    const payload: JwtPayload = { sub: '1', email: 'test@example.com' };
+    const payload: JwtPayload = {
+      sub: '1',
+      email: 'test@example.com',
+      jti: generateUUID(),
+    };
 
     jest.spyOn(userService, 'findOne').mockRejectedValue(new Error());
 

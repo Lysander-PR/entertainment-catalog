@@ -8,6 +8,7 @@ import { isMatchEncrypted } from '@/common/helpers/hash.helper';
 import { JwtPayload } from './types/interfaces/jwt-payload.interface';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { User } from '@/user/entities/user.entity';
+import { generateUUID } from '@/common/helpers/generate-uuid.util';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +29,7 @@ export class AuthService {
       access_token: this.generateJwtToken({
         sub: user.id,
         email: user.email,
+        jti: generateUUID(),
       }),
     };
   }
@@ -45,6 +47,7 @@ export class AuthService {
         access_token: this.generateJwtToken({
           sub: user.id,
           email: user.email,
+          jti: generateUUID(),
         }),
       };
     } catch {
@@ -58,6 +61,7 @@ export class AuthService {
       access_token: this.generateJwtToken({
         sub: user.id,
         email: user.email,
+        jti: generateUUID(),
       }),
     };
   }

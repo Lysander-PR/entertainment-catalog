@@ -9,6 +9,7 @@ export async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix(APP_PREFIX);
+  app.enableCors();
 
   app.useGlobalPipes(
     new ValidationPipe({

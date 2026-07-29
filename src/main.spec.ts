@@ -18,6 +18,7 @@ jest.mock('@nestjs/core', () => ({
   NestFactory: {
     create: jest.fn().mockResolvedValue({
       setGlobalPrefix: jest.fn(),
+      enableCors: jest.fn(),
       useGlobalPipes: jest.fn(),
       listen: jest.fn(),
       getUrl: jest.fn().mockResolvedValue('http://localhost:3000'),
@@ -50,6 +51,7 @@ jest.mock('./config/envs', () => ({
 describe('Main', () => {
   let mockApp: {
     setGlobalPrefix: jest.Mock;
+    enableCors: jest.Mock;
     useGlobalPipes: jest.Mock;
     listen: jest.Mock;
     getUrl: jest.Mock;
@@ -62,6 +64,7 @@ describe('Main', () => {
 
     mockApp = {
       setGlobalPrefix: jest.fn(),
+      enableCors: jest.fn(),
       useGlobalPipes: jest.fn(),
       listen: jest.fn(),
       getUrl: jest.fn().mockResolvedValue('http://localhost:3000'),
@@ -89,6 +92,12 @@ describe('Main', () => {
     await bootstrap();
 
     expect(mockApp.setGlobalPrefix).toHaveBeenCalledWith(APP_PREFIX);
+  });
+
+  it('should enable CORS', async () => {
+    await bootstrap();
+
+    expect(mockApp.enableCors).toHaveBeenCalled();
   });
 
   it('should set the global validation pipe', async () => {

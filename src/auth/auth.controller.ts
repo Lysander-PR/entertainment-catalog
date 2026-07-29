@@ -4,6 +4,7 @@ import {
   Body,
   UseInterceptors,
   ClassSerializerInterceptor,
+  UseFilters,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -18,10 +19,12 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login-auth.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
+import { QueryFailedErrorFilter } from '@/common/filters/query-failed.filter';
 
 @ApiTags('Auth')
 @Controller('auth')
 @UseInterceptors(ClassSerializerInterceptor)
+@UseFilters(QueryFailedErrorFilter)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

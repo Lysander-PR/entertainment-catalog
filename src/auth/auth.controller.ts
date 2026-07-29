@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiOkResponse,
@@ -20,6 +21,9 @@ import { LoginDto } from './dto/login-auth.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
 import { QueryFailedErrorFilter } from '@/common/filters/query-failed.filter';
+import { Auth } from '@/auth/decorator/auth.decorator';
+import { GetUser } from '@/auth/decorator/get-user.decorator';
+import { User } from '@/user/entities/user.entity';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -51,5 +55,17 @@ export class AuthController {
   })
   register(@Body() signInDto: CreateUserDto) {
     return this.authService.register(signInDto);
+  }
+
+  @Post('refresh')
+  @Auth()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Renew the access token for the current user' })
+  @ApiOkResponse({
+    description: 'Token renewed successfully',
+    type: AuthResponseDto,
+  })
+  refresh(@GetUser() user: User): AuthResponseDto {
+    return this.authService.refreshToken(user);
   }
 }

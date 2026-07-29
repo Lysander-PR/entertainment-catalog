@@ -32,6 +32,7 @@ describe('AuthController', () => {
     const serviceMock = {
       login: jest.fn(),
       register: jest.fn(),
+      refreshToken: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -89,5 +90,14 @@ describe('AuthController', () => {
     await expect(controller.login(dto)).rejects.toBeInstanceOf(
       BadRequestException,
     );
+  });
+
+  it('should renew the token for the authenticated user', () => {
+    jest.spyOn(service, 'refreshToken').mockReturnValue(mockAuthResponse);
+    const result = controller.refresh(mockUser);
+
+    expect(service.refreshToken).toHaveBeenCalledWith(mockUser);
+    expect(service.refreshToken).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(mockAuthResponse);
   });
 });

@@ -7,6 +7,7 @@ import { CreateUserDto } from '@/user/dto/create-user.dto';
 import { isMatchEncrypted } from '@/common/helpers/hash.helper';
 import { JwtPayload } from './types/interfaces/jwt-payload.interface';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { User } from '@/user/entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -49,6 +50,16 @@ export class AuthService {
     } catch {
       throw new BadRequestException('Credentials are not valid');
     }
+  }
+
+  refreshToken(user: User): AuthResponseDto {
+    return {
+      user,
+      access_token: this.generateJwtToken({
+        sub: user.id,
+        email: user.email,
+      }),
+    };
   }
 
   private generateJwtToken(payload: JwtPayload): string {

@@ -122,4 +122,12 @@ describe('AuthService', () => {
       expect(error.message).toBe('Credentials are not valid');
     }
   });
+
+  it('should renew the token for the given user', () => {
+    const result = service.refreshToken(mockUser);
+
+    expect(result.access_token).toBeDefined();
+    expect(typeof result.access_token).toBe('string');
+    expect(result.user).toEqual(mockUser);
+  });
 });

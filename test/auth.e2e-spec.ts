@@ -357,4 +357,60 @@ describe('Auth (e2e)', () => {
       expect(response.body.message).toContain('password must be a string');
     });
   });
+
+  describe('POST /refresh', () => {
+    let accessToken: string;
+
+    beforeAll(async () => {
+      await userRepository.delete({ email: testingUser.email });
+
+      const registerResponse = await request(app.getHttpServer())
+        .post('/api/auth/register')
+        .send(testingUser);
+
+      accessToken = registerResponse.body.access_token;
+    });
+
+    afterAll(async () => {
+      await userRepository.delete({ email: testingUser.email });
+    });
+
+    it('POST /api/auth/refresh renews the token for an authenticated user', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/auth/refresh')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(201);
+
+      expect(response.body).toHaveProperty('user');
+      expect(response.body).toHaveProperty('access_token');
+      expect(typeof response.body.access_token).toBe('string');
+      expect(response.body.access_token).not.toBe(accessToken);
+      expect(response.body.user).toEqual(
+        expect.objectContaining({
+          id: expect.any(String),
+          email: expect.any(String),
+          username: expect.any(String),
+          rol: expect.any(String),
+        }),
+      );
+      expect(response.body.user.password).toBeUndefined();
+    });
+
+    it('POST /api/auth/refresh rejects a request without a token', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/auth/refresh')
+        .expect(401);
+
+      expect(response.body?.message).toBeDefined();
+    });
+
+    it('POST /api/auth/refresh rejects an invalid token', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/auth/refresh')
+        .set('Authorization', 'Bearer invalid-token')
+        .expect(401);
+
+      expect(response.body?.message).toBeDefined();
+    });
+  });
 });

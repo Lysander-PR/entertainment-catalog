@@ -2,6 +2,7 @@ import {
   BeforeInsert,
   BeforeUpdate,
   Column,
+  CreateDateColumn,
   Entity,
   JoinColumn,
   OneToMany,
@@ -74,6 +75,18 @@ export class Album {
   @Column('bool', { name: 'active', default: true })
   @ApiHideProperty()
   active: boolean;
+
+  @CreateDateColumn({
+    name: 'created_at',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  @Expose()
+  @ApiProperty({
+    description: 'Creation timestamp',
+    type: String,
+    format: 'date-time',
+  })
+  createdAt: Date;
 
   @OneToMany(() => Song, (song) => song.album)
   @Expose()

@@ -12,6 +12,8 @@ import { UpdateMovieDto } from './dto/update-movie.dto';
 import { Movie } from './entities/movie.entity';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
+import { paginate } from '@/common/helpers/paginate.helper';
 import { Cover } from '@/files/entities/cover.entity';
 import { BuildStoragePath } from './types/interfaces/build-storage-path';
 import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params';
@@ -72,11 +74,8 @@ export class MoviesService extends EntertainmentStorage {
     );
   }
 
-  findAll(paginationDto: PaginationDto): Promise<Movie[]> {
-    const { limit, page } = paginationDto;
-    return this.movieRepository.find({
-      take: limit,
-      skip: (page - 1) * limit,
+  findAll(paginationDto: PaginationDto): Promise<PaginationResponseDto<Movie>> {
+    return paginate(this.movieRepository, paginationDto, {
       where: { active: true },
     });
   }

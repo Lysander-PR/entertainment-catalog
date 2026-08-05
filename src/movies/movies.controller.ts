@@ -42,6 +42,8 @@ import {
 import { MOVIES_PATH } from './types/consts/movies.const';
 import { Auth } from '@/auth/decorator/auth.decorator';
 import { Public } from '@/auth/decorator/public.decorator';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
+import { ApiPaginatedResponse } from '@/common/decorators/api-paginated-response.decorator';
 
 @ApiTags('Movies')
 @Controller(MOVIES_PATH)
@@ -130,11 +132,8 @@ export class MoviesController {
     example: 1,
     description: 'Page number (starts at 1)',
   })
-  @ApiOkResponse({
-    description: 'List of active movies',
-    type: Movie,
-    isArray: true,
-  })
+  @ApiPaginatedResponse(Movie, 'Paginated list of active movies')
+  @SerializeOptions({ type: PaginationResponseDto })
   @Public()
   findAll(@Query() paginationDto: PaginationDto) {
     return this.moviesService.findAll(paginationDto);

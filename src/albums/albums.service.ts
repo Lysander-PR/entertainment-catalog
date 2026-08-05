@@ -13,6 +13,8 @@ import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
+import { paginate } from '@/common/helpers/paginate.helper';
 import { CommonService } from '@/common/common.service';
 import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params.interface';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
@@ -81,10 +83,8 @@ export class AlbumsService extends EntertainmentStorage {
     );
   }
 
-  async find({ limit, page }: PaginationDto): Promise<Album[]> {
-    return this.albumRepository.find({
-      take: limit,
-      skip: (page - 1) * limit,
+  find(paginationDto: PaginationDto): Promise<PaginationResponseDto<Album>> {
+    return paginate(this.albumRepository, paginationDto, {
       where: { active: true },
     });
   }

@@ -447,6 +447,23 @@ GET /api/movies?limit=10&page=1
 - `limit`: results per page — positive integer, defaults to `10`
 - `page`: page number — integer starting at `1`, defaults to `1`
 
+Listing endpoints wrap the results in a pagination envelope:
+
+```json
+{
+  "data": [],
+  "total": 42,
+  "currentPage": 1,
+  "totalPages": 5,
+  "hasNextPage": true,
+  "hasPreviousPage": false
+}
+```
+
+- `data`: the records for the requested page
+- `total`: records matching the query, ignoring pagination
+- `totalPages`: `ceil(total / limit)` — `0` when there are no records
+
 ### File Upload Constraints
 
 Cover images are validated by `FileValidationPipe`:

@@ -12,6 +12,8 @@ import { UpdateBookDto } from './dto/update-book.dto';
 import { Book } from './entities/book.entity';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
+import { paginate } from '@/common/helpers/paginate.helper';
 import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params.interface';
 import { CommonService } from '@/common/common.service';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
@@ -70,10 +72,8 @@ export class BooksService extends EntertainmentStorage {
     );
   }
 
-  findAll(paginationDto: PaginationDto): Promise<Book[]> {
-    return this.bookRepository.find({
-      take: paginationDto.limit,
-      skip: (paginationDto.page - 1) * paginationDto.limit,
+  findAll(paginationDto: PaginationDto): Promise<PaginationResponseDto<Book>> {
+    return paginate(this.bookRepository, paginationDto, {
       where: { active: true },
     });
   }

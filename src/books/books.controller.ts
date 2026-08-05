@@ -43,6 +43,8 @@ import {
 import { BOOKS_PATH } from './types/consts/books.const';
 import { Auth } from '@/auth/decorator/auth.decorator';
 import { Public } from '@/auth/decorator/public.decorator';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
+import { ApiPaginatedResponse } from '@/common/decorators/api-paginated-response.decorator';
 
 @ApiTags('Books')
 @Controller(BOOKS_PATH)
@@ -122,11 +124,8 @@ export class BooksController {
     example: 1,
     description: 'Page number (starts at 1)',
   })
-  @ApiOkResponse({
-    description: 'List of active books',
-    type: Book,
-    isArray: true,
-  })
+  @ApiPaginatedResponse(Book, 'Paginated list of active books')
+  @SerializeOptions({ type: PaginationResponseDto })
   @Public()
   findAll(@Query() paginationDto: PaginationDto) {
     return this.booksService.findAll(paginationDto);

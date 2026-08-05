@@ -13,6 +13,8 @@ import { UpdateSongDto } from './dto/update-song.dto';
 import { Song } from './entities/song.entity';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
+import { paginate } from '@/common/helpers/paginate.helper';
 import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params.interface';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { SONGS_PATH } from './types/consts/songs.const';
@@ -41,10 +43,8 @@ export class SongsService extends CacheKey {
     return songSaved;
   }
 
-  findAll({ limit, page }: PaginationDto): Promise<Song[]> {
-    return this.songRepository.find({
-      take: limit,
-      skip: (page - 1) * limit,
+  findAll(paginationDto: PaginationDto): Promise<PaginationResponseDto<Song>> {
+    return paginate(this.songRepository, paginationDto, {
       where: { active: true },
       relations: { album: true, genre: true },
     });

@@ -5,7 +5,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Not, Repository, UpdateResult } from 'typeorm';
 
@@ -18,11 +17,12 @@ import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { SONGS_PATH } from './types/consts/songs.const';
 import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
+import { CacheService } from '@/common/cache/cache.service';
 
 describe('SongsService', () => {
   let service: SongsService;
   let repository: Repository<Song>;
-  let cacheManager: { del: jest.Mock };
+  let cacheService: { deleteByPrefix: jest.Mock };
 
   const cacheKey = `/${APP_PREFIX}/${SONGS_PATH}`;
 
@@ -53,19 +53,19 @@ describe('SongsService', () => {
       update: jest.fn(),
     };
 
-    const cacheManagerMock = { del: jest.fn() };
+    const cacheServiceMock = { deleteByPrefix: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SongsService,
         { provide: getRepositoryToken(Song), useValue: repositoryMock },
-        { provide: CACHE_MANAGER, useValue: cacheManagerMock },
+        { provide: CacheService, useValue: cacheServiceMock },
       ],
     }).compile();
 
     service = module.get<SongsService>(SongsService);
     repository = module.get<Repository<Song>>(getRepositoryToken(Song));
-    cacheManager = module.get(CACHE_MANAGER);
+    cacheService = module.get(CacheService);
   });
 
   afterEach(() => {
@@ -97,7 +97,7 @@ describe('SongsService', () => {
     });
     expect(repository.create).toHaveBeenCalledWith(dto);
     expect(repository.save).toHaveBeenCalledWith(mockSong);
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(result).toEqual(mockSong);
   });
 
@@ -155,8 +155,7 @@ describe('SongsService', () => {
       { id: mockSong.id },
       mergedSong,
     );
-    expect(cacheManager.del).toHaveBeenCalledWith(`${cacheKey}/${mockSong.id}`);
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(result).toEqual(mergedSong);
   });
 
@@ -217,12 +216,11 @@ describe('SongsService', () => {
       { id: mockSong.id },
       { active: false },
     );
-    expect(cacheManager.del).toHaveBeenCalledWith(`${cacheKey}/${mockSong.id}`);
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(result).toEqual(mockSong);
   });
 
-  it('should reactivate a song', async () => {
+  it('should reactivate a song and invalidate the cache prefix', async () => {
     const inactiveSong = { ...mockSong, active: false } as Song;
 
     jest.spyOn(repository, 'findOneBy').mockResolvedValue(inactiveSong);
@@ -235,6 +233,7 @@ describe('SongsService', () => {
       { id: mockSong.id },
       { active: true },
     );
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(result).toEqual(inactiveSong);
   });
 
@@ -245,5 +244,6 @@ describe('SongsService', () => {
       NotFoundException,
     );
     expect(repository.update).not.toHaveBeenCalled();
+    expect(cacheService.deleteByPrefix).not.toHaveBeenCalled();
   });
 });

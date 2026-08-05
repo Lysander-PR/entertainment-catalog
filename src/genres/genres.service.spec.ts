@@ -4,7 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository, UpdateResult } from 'typeorm';
 
@@ -13,14 +12,16 @@ import { Genre } from './entities/genre.entity';
 import { CreateGenreDto } from './dto/create-genre.dto';
 import { UpdateGenreDto } from './dto/update-genre.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { GENRES_PATH } from './types/consts/genres.const';
 import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
+import { CacheService } from '@/common/cache/cache.service';
 
 describe('GenresService', () => {
   let service: GenresService;
   let repository: Repository<Genre>;
-  let cacheManager: { del: jest.Mock };
+  let cacheService: { deleteByPrefix: jest.Mock };
 
   const cacheKey = `/${APP_PREFIX}/${GENRES_PATH}`;
 
@@ -32,6 +33,7 @@ describe('GenresService', () => {
   beforeEach(async () => {
     const repositoryMock = {
       save: jest.fn(),
+      findAndCount: jest.fn(),
       find: jest.fn(),
       findOneBy: jest.fn(),
       merge: jest.fn(),
@@ -39,19 +41,19 @@ describe('GenresService', () => {
       delete: jest.fn(),
     };
 
-    const cacheManagerMock = { del: jest.fn() };
+    const cacheServiceMock = { deleteByPrefix: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         GenresService,
         { provide: getRepositoryToken(Genre), useValue: repositoryMock },
-        { provide: CACHE_MANAGER, useValue: cacheManagerMock },
+        { provide: CacheService, useValue: cacheServiceMock },
       ],
     }).compile();
 
     service = module.get<GenresService>(GenresService);
     repository = module.get<Repository<Genre>>(getRepositoryToken(Genre));
-    cacheManager = module.get(CACHE_MANAGER);
+    cacheService = module.get(CacheService);
   });
 
   afterEach(() => {
@@ -62,7 +64,7 @@ describe('GenresService', () => {
     expect(service).toBeDefined();
   });
 
-  it('should create a genre with a capitalized description and invalidate the cache', async () => {
+  it('should create a genre with a capitalized description and invalidate the cache prefix', async () => {
     const dto: CreateGenreDto = { description: 'rock' };
 
     jest.spyOn(repository, 'save').mockResolvedValue(mockGenre);
@@ -72,21 +74,30 @@ describe('GenresService', () => {
     expect(repository.save).toHaveBeenCalledWith({
       genre: capitalize(dto.description),
     });
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(result).toEqual(mockGenre);
   });
 
   it('should return a paginated list of genres', async () => {
     const paginationDto: PaginationDto = { limit: 5, page: 2 };
 
-    jest.spyOn(repository, 'find').mockResolvedValue([mockGenre]);
+    jest.spyOn(repository, 'findAndCount').mockResolvedValue([[mockGenre], 11]);
 
     const result = await service.find(paginationDto);
 
-    expect(repository.find).toHaveBeenCalledWith({
+    expect(repository.findAndCount).toHaveBeenCalledWith({
       take: paginationDto.limit,
       skip: (paginationDto.page - 1) * paginationDto.limit,
     });
+    expect(result).toEqual(new PaginationResponseDto([mockGenre], 11, 2, 5));
+  });
+
+  it('should return every genre without pagination', async () => {
+    jest.spyOn(repository, 'find').mockResolvedValue([mockGenre]);
+
+    const result = await service.findAll();
+
+    expect(repository.find).toHaveBeenCalledWith();
     expect(result).toEqual([mockGenre]);
   });
 
@@ -107,7 +118,7 @@ describe('GenresService', () => {
     );
   });
 
-  it('should update a genre and invalidate both cache entries', async () => {
+  it('should update a genre and invalidate the whole cache prefix', async () => {
     const dto: UpdateGenreDto = { description: 'jazz' };
     const mergedGenre = {
       ...mockGenre,
@@ -129,10 +140,8 @@ describe('GenresService', () => {
       { id: mockGenre.id },
       mergedGenre,
     );
-    expect(cacheManager.del).toHaveBeenCalledWith(
-      `${cacheKey}/${mockGenre.id}`,
-    );
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledTimes(1);
     expect(result).toEqual(mergedGenre);
   });
 
@@ -166,7 +175,7 @@ describe('GenresService', () => {
     );
   });
 
-  it('should delete a genre and invalidate both cache entries', async () => {
+  it('should delete a genre and invalidate the whole cache prefix', async () => {
     jest.spyOn(repository, 'findOneBy').mockResolvedValue(mockGenre);
     jest
       .spyOn(repository, 'delete')
@@ -175,10 +184,8 @@ describe('GenresService', () => {
     const result = await service.remove(mockGenre.id);
 
     expect(repository.delete).toHaveBeenCalledWith({ id: mockGenre.id });
-    expect(cacheManager.del).toHaveBeenCalledWith(
-      `${cacheKey}/${mockGenre.id}`,
-    );
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledTimes(1);
     expect(result).toEqual(mockGenre);
   });
 

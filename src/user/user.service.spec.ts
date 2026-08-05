@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'typeorm';
 
@@ -11,6 +10,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Roles } from './types/enums/roles.enum';
 import { hashData } from '@/common/helpers/hash.helper';
+import { CacheService } from '@/common/cache/cache.service';
 
 jest.mock('@/common/helpers/hash.helper', () => ({
   hashData: jest.fn(),
@@ -19,7 +19,7 @@ jest.mock('@/common/helpers/hash.helper', () => ({
 describe('UserService', () => {
   let service: UserService;
   let repository: Repository<User>;
-  let cacheManager: { del: jest.Mock };
+  let cacheService: { deleteByPrefix: jest.Mock };
 
   const cacheKey = '/api/user';
 
@@ -43,21 +43,21 @@ describe('UserService', () => {
       exists: jest.fn(),
     };
 
-    const cacheManagerMock = {
-      del: jest.fn(),
+    const cacheServiceMock = {
+      deleteByPrefix: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UserService,
         { provide: getRepositoryToken(User), useValue: repositoryMock },
-        { provide: CACHE_MANAGER, useValue: cacheManagerMock },
+        { provide: CacheService, useValue: cacheServiceMock },
       ],
     }).compile();
 
     service = module.get<UserService>(UserService);
     repository = module.get<Repository<User>>(getRepositoryToken(User));
-    cacheManager = module.get(CACHE_MANAGER);
+    cacheService = module.get(CacheService);
   });
 
   afterEach(() => {
@@ -175,9 +175,7 @@ describe('UserService', () => {
         { id: mockUser.id },
         mergedUser,
       );
-      expect(cacheManager.del).toHaveBeenCalledWith(
-        `${cacheKey}/${mockUser.id}`,
-      );
+      expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
       expect(result).toEqual(mergedUser);
     });
 
@@ -231,9 +229,7 @@ describe('UserService', () => {
         { id: mockUser.id },
         { active: false },
       );
-      expect(cacheManager.del).toHaveBeenCalledWith(
-        `${cacheKey}/${mockUser.id}`,
-      );
+      expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
       expect(result).toEqual(mockUser);
     });
 
@@ -248,7 +244,7 @@ describe('UserService', () => {
   });
 
   describe('reactivate', () => {
-    it('should reactivate a user', async () => {
+    it('should reactivate a user and invalidate the cache prefix', async () => {
       const inactiveUser = { ...mockUser, active: false } as User;
 
       jest.spyOn(repository, 'findOneBy').mockResolvedValue(inactiveUser);
@@ -261,6 +257,7 @@ describe('UserService', () => {
         { id: mockUser.id },
         { active: true },
       );
+      expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
       expect(result).toEqual(inactiveUser);
     });
 
@@ -271,6 +268,7 @@ describe('UserService', () => {
         NotFoundException,
       );
       expect(repository.update).not.toHaveBeenCalled();
+      expect(cacheService.deleteByPrefix).not.toHaveBeenCalled();
     });
   });
 });

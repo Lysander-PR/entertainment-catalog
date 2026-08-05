@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource, Not, Repository } from 'typeorm';
 
@@ -18,13 +17,14 @@ import { capitalize } from '@/common/helpers/capitalize.helper';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { BOOKS_PATH } from './types/consts/books.const';
 import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
+import { CacheService } from '@/common/cache/cache.service';
 
 describe('BooksService', () => {
   let service: BooksService;
   let repository: Repository<Book>;
   let commonService: CommonService;
   let dataSource: DataSource;
-  let cacheManager: { del: jest.Mock };
+  let cacheService: { deleteByPrefix: jest.Mock };
   let managerMock: {
     create: jest.Mock;
     save: jest.Mock;
@@ -82,7 +82,7 @@ describe('BooksService', () => {
       manager: { save: jest.fn() },
     };
 
-    const cacheManagerMock = { del: jest.fn() };
+    const cacheServiceMock = { deleteByPrefix: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -90,7 +90,7 @@ describe('BooksService', () => {
         { provide: getRepositoryToken(Book), useValue: repositoryMock },
         { provide: CommonService, useValue: commonServiceMock },
         { provide: DataSource, useValue: dataSourceMock },
-        { provide: CACHE_MANAGER, useValue: cacheManagerMock },
+        { provide: CacheService, useValue: cacheServiceMock },
       ],
     }).compile();
 
@@ -98,7 +98,7 @@ describe('BooksService', () => {
     repository = module.get<Repository<Book>>(getRepositoryToken(Book));
     commonService = module.get<CommonService>(CommonService);
     dataSource = module.get<DataSource>(DataSource);
-    cacheManager = module.get(CACHE_MANAGER);
+    cacheService = module.get(CacheService);
   });
 
   afterEach(() => {
@@ -138,7 +138,7 @@ describe('BooksService', () => {
     );
     expect(managerMock.create).toHaveBeenCalledWith(Book, dto);
     expect(managerMock.getRepository).not.toHaveBeenCalled();
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(managerMock.save).toHaveBeenCalledTimes(1);
     expect(result).toEqual(mockBook);
   });
@@ -219,8 +219,7 @@ describe('BooksService', () => {
     const result = await service.update(mockBook.id, updateDto);
 
     expect(repository.merge).toHaveBeenCalledWith(mockBook, updateDto);
-    expect(cacheManager.del).toHaveBeenCalledWith(`${cacheKey}/${mockBook.id}`);
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(dataSource.manager.save).toHaveBeenCalledWith(mergedBook);
     expect(result).toEqual(mergedBook);
   });
@@ -295,12 +294,11 @@ describe('BooksService', () => {
       { id: mockBook.id },
       { active: false },
     );
-    expect(cacheManager.del).toHaveBeenCalledWith(`${cacheKey}/${mockBook.id}`);
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(result).toEqual(mockBook);
   });
 
-  it('should reactivate a book', async () => {
+  it('should reactivate a book and invalidate the cache prefix', async () => {
     const inactiveBook = { ...mockBook, active: false } as Book;
 
     jest.spyOn(repository, 'findOne').mockResolvedValue(inactiveBook);
@@ -315,6 +313,7 @@ describe('BooksService', () => {
       { id: mockBook.id },
       { active: true },
     );
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(result).toEqual(inactiveBook);
   });
 
@@ -325,5 +324,6 @@ describe('BooksService', () => {
       NotFoundException,
     );
     expect(repository.update).not.toHaveBeenCalled();
+    expect(cacheService.deleteByPrefix).not.toHaveBeenCalled();
   });
 });

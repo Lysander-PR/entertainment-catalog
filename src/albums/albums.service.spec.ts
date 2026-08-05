@@ -6,7 +6,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource, Not, Repository, UpdateResult } from 'typeorm';
 
@@ -23,13 +22,14 @@ import { capitalize } from '@/common/helpers/capitalize.helper';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { ALBUMS_PATH } from './types/consts/albums.const';
 import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
+import { CacheService } from '@/common/cache/cache.service';
 
 describe('AlbumsService', () => {
   let service: AlbumsService;
   let repository: Repository<Album>;
   let commonService: CommonService;
   let dataSource: DataSource;
-  let cacheManager: { del: jest.Mock };
+  let cacheService: { deleteByPrefix: jest.Mock };
   let managerMock: {
     create: jest.Mock;
     save: jest.Mock;
@@ -104,7 +104,7 @@ describe('AlbumsService', () => {
       getRepository: jest.fn(),
     };
 
-    const cacheManagerMock = { del: jest.fn() };
+    const cacheServiceMock = { deleteByPrefix: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -112,7 +112,7 @@ describe('AlbumsService', () => {
         { provide: getRepositoryToken(Album), useValue: repositoryMock },
         { provide: CommonService, useValue: commonServiceMock },
         { provide: DataSource, useValue: dataSourceMock },
-        { provide: CACHE_MANAGER, useValue: cacheManagerMock },
+        { provide: CacheService, useValue: cacheServiceMock },
       ],
     }).compile();
 
@@ -120,7 +120,7 @@ describe('AlbumsService', () => {
     repository = module.get<Repository<Album>>(getRepositoryToken(Album));
     commonService = module.get<CommonService>(CommonService);
     dataSource = module.get<DataSource>(DataSource);
-    cacheManager = module.get(CACHE_MANAGER);
+    cacheService = module.get(CacheService);
   });
 
   afterEach(() => {
@@ -176,7 +176,7 @@ describe('AlbumsService', () => {
     expect(managerMock.getRepository).not.toHaveBeenCalledWith(Cover);
     expect(managerMock.save).toHaveBeenCalledWith(albumDraft);
     expect(songRepositoryMock.save).toHaveBeenCalledWith(songsDraft);
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(result).toBe(albumSaved);
     expect(result.songs).toEqual(savedSongs);
   });
@@ -266,10 +266,7 @@ describe('AlbumsService', () => {
       ...updateDto,
       songs: mockAlbum.songs,
     });
-    expect(cacheManager.del).toHaveBeenCalledWith(
-      `${cacheKey}/${mockAlbum.id}`,
-    );
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(managerMock.save).toHaveBeenCalledWith(mergedAlbum);
     expect(result).toEqual(mergedAlbum);
   });
@@ -356,10 +353,7 @@ describe('AlbumsService', () => {
       { albumId: mockAlbum.id },
       { active: false },
     );
-    expect(cacheManager.del).toHaveBeenCalledWith(
-      `${cacheKey}/${mockAlbum.id}`,
-    );
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(result).toEqual(mockAlbum);
   });
 
@@ -375,7 +369,7 @@ describe('AlbumsService', () => {
     expect(dataSource.getRepository).not.toHaveBeenCalled();
   });
 
-  it('should reactivate an album and its songs', async () => {
+  it('should reactivate an album and its songs and invalidate the cache prefix', async () => {
     const inactiveAlbum = { ...mockAlbum, active: false } as Album;
     const songRepositoryMock = {
       update: jest.fn().mockResolvedValue({ affected: 1 } as UpdateResult),
@@ -399,6 +393,7 @@ describe('AlbumsService', () => {
       { albumId: mockAlbum.id },
       { active: true },
     );
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(result).toEqual(inactiveAlbum);
   });
 
@@ -409,5 +404,6 @@ describe('AlbumsService', () => {
       NotFoundException,
     );
     expect(repository.update).not.toHaveBeenCalled();
+    expect(cacheService.deleteByPrefix).not.toHaveBeenCalled();
   });
 });

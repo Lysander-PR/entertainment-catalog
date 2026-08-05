@@ -2,9 +2,20 @@ import { MODULE_METADATA } from '@nestjs/common/constants';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
 
+// CommonModule pulls in FilesModule -> SupabaseService, which reads envs on load.
+jest.mock('@/config/envs', () => ({
+  envs: {
+    SUPABASE_URL: 'https://test.supabase.co',
+    SUPABASE_KEY: 'test-key',
+    SUPABASE_BUCKET: 'test-bucket',
+  },
+  isProd: false,
+}));
+
 import { GenresModule } from './genres.module';
 import { GenresController } from './genres.controller';
 import { GenresService } from './genres.service';
+import { CommonModule } from '@/common/common.module';
 
 describe('GenresModule', () => {
   let module: TestingModule;
@@ -46,6 +57,11 @@ describe('GenresModule', () => {
     );
 
     expect(typeOrmImport).toBeDefined();
+  });
+
+  it('should import CommonModule to reach CacheService', () => {
+    const imports = Reflect.getMetadata(MODULE_METADATA.IMPORTS, GenresModule);
+    expect(imports).toContain(CommonModule);
   });
 
   it('should export GenresService', () => {

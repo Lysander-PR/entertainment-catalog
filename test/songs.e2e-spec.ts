@@ -104,16 +104,42 @@ describe('Songs (e2e)', () => {
   });
 
   describe('GET /api/songs', () => {
-    it('is public and returns a list of songs', async () => {
+    it('is public and returns a paginated list of songs', async () => {
       const response = await request(app.getHttpServer())
         .get('/api/songs')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThan(0);
-      (response.body as Record<string, unknown>[]).forEach((song) =>
+      expect(response.body).toEqual(
+        expect.objectContaining({
+          data: expect.any(Array),
+          total: expect.any(Number),
+          currentPage: expect.any(Number),
+          totalPages: expect.any(Number),
+          hasNextPage: expect.any(Boolean),
+          hasPreviousPage: expect.any(Boolean),
+        }),
+      );
+      expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.currentPage).toBe(1);
+      expect(response.body.hasPreviousPage).toBe(false);
+      expect(response.body.total).toBeGreaterThanOrEqual(
+        response.body.data.length,
+      );
+      (response.body.data as Record<string, unknown>[]).forEach((song) =>
         expectSongShape(song),
       );
+    });
+
+    it('reports the unpaginated total and the page flags', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/songs?limit=1&page=1')
+        .expect(200);
+
+      // With limit=1 there is one page per record, so totalPages mirrors total
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.totalPages).toBe(response.body.total);
+      expect(response.body.hasNextPage).toBe(response.body.total > 1);
+      expect(response.body.hasPreviousPage).toBe(false);
     });
   });
 

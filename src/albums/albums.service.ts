@@ -96,6 +96,11 @@ export class AlbumsService extends EntertainmentStorage {
       throw new NotFoundException(`Album with id ${id} not found`);
     }
 
+    album.songs = await this.dataSource.getRepository(Song).find({
+      where: { albumId: id, active: true },
+      relations: { genre: true },
+    });
+
     return album;
   }
 

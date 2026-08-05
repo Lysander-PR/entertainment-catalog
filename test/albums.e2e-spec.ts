@@ -405,13 +405,23 @@ describe('Albums (e2e)', () => {
       );
     });
 
-    it('returns the created album', async () => {
+    it('returns the created album with its songs and each song genre', async () => {
       const response = await request(app.getHttpServer())
         .get(`/api/albums/${albumIds[0]}`)
         .expect(200);
 
       expectAlbumShape(response.body);
       expect(response.body.id).toBe(albumIds[0]);
+      expect(response.body.songs).toHaveLength(1);
+      expect(response.body.songs[0]).toEqual(
+        expect.objectContaining({
+          id: songIds[0],
+          genre: expect.objectContaining({
+            id: genreId,
+            genre: expect.any(String),
+          }),
+        }),
+      );
     });
   });
 

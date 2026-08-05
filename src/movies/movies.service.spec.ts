@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource, Not, Repository } from 'typeorm';
 
@@ -12,18 +11,20 @@ import { Cover } from '@/files/entities/cover.entity';
 import { CreateMovieDto } from './dto/create-movie.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
 import { CommonService } from '@/common/common.service';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { MOVIES_PATH } from './types/consts/movies.const';
 import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
+import { CacheService } from '@/common/cache/cache.service';
 
 describe('MoviesService', () => {
   let service: MoviesService;
   let repository: Repository<Movie>;
   let commonService: CommonService;
   let dataSource: DataSource;
-  let cacheManager: { del: jest.Mock };
+  let cacheService: { deleteByPrefix: jest.Mock };
   let managerMock: {
     create: jest.Mock;
     save: jest.Mock;
@@ -58,7 +59,7 @@ describe('MoviesService', () => {
 
   beforeEach(async () => {
     const repositoryMock = {
-      find: jest.fn(),
+      findAndCount: jest.fn(),
       findOneBy: jest.fn(),
       merge: jest.fn(),
       update: jest.fn(),
@@ -85,7 +86,7 @@ describe('MoviesService', () => {
         .mockImplementation((_level, work) => work(managerMock)),
     };
 
-    const cacheManagerMock = { del: jest.fn() };
+    const cacheServiceMock = { deleteByPrefix: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -93,7 +94,7 @@ describe('MoviesService', () => {
         { provide: getRepositoryToken(Movie), useValue: repositoryMock },
         { provide: CommonService, useValue: commonServiceMock },
         { provide: DataSource, useValue: dataSourceMock },
-        { provide: CACHE_MANAGER, useValue: cacheManagerMock },
+        { provide: CacheService, useValue: cacheServiceMock },
       ],
     }).compile();
 
@@ -101,7 +102,7 @@ describe('MoviesService', () => {
     repository = module.get<Repository<Movie>>(getRepositoryToken(Movie));
     commonService = module.get<CommonService>(CommonService);
     dataSource = module.get<DataSource>(DataSource);
-    cacheManager = module.get(CACHE_MANAGER);
+    cacheService = module.get(CacheService);
   });
 
   afterEach(() => {
@@ -151,7 +152,7 @@ describe('MoviesService', () => {
     );
     expect(managerMock.create).toHaveBeenCalledWith(Movie, dto);
     expect(managerMock.getRepository).not.toHaveBeenCalled();
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(managerMock.save).toHaveBeenCalledTimes(1);
     expect(result).toEqual(mockMovie);
   });
@@ -194,16 +195,16 @@ describe('MoviesService', () => {
   it('should return a paginated list of active movies', async () => {
     const paginationDto: PaginationDto = { limit: 5, page: 2 };
 
-    jest.spyOn(repository, 'find').mockResolvedValue([mockMovie]);
+    jest.spyOn(repository, 'findAndCount').mockResolvedValue([[mockMovie], 11]);
 
     const result = await service.findAll(paginationDto);
 
-    expect(repository.find).toHaveBeenCalledWith({
+    expect(repository.findAndCount).toHaveBeenCalledWith({
       take: paginationDto.limit,
       skip: (paginationDto.page - 1) * paginationDto.limit,
       where: { active: true },
     });
-    expect(result).toEqual([mockMovie]);
+    expect(result).toEqual(new PaginationResponseDto([mockMovie], 11, 2, 5));
   });
 
   it('should return a movie by id', async () => {
@@ -243,10 +244,7 @@ describe('MoviesService', () => {
       { id: mockMovie.id },
       mergedMovie,
     );
-    expect(cacheManager.del).toHaveBeenCalledWith(
-      `${cacheKey}/${mockMovie.id}`,
-    );
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(result).toEqual(mergedMovie);
   });
 
@@ -319,14 +317,11 @@ describe('MoviesService', () => {
       { id: mockMovie.id },
       { active: false },
     );
-    expect(cacheManager.del).toHaveBeenCalledWith(
-      `${cacheKey}/${mockMovie.id}`,
-    );
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(result).toEqual(mockMovie);
   });
 
-  it('should reactivate a movie', async () => {
+  it('should reactivate a movie and invalidate the cache prefix', async () => {
     const inactiveMovie = { ...mockMovie, active: false } as Movie;
 
     jest.spyOn(repository, 'findOneBy').mockResolvedValue(inactiveMovie);
@@ -339,6 +334,7 @@ describe('MoviesService', () => {
       { id: mockMovie.id },
       { active: true },
     );
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(result).toEqual(inactiveMovie);
   });
 
@@ -349,5 +345,6 @@ describe('MoviesService', () => {
       NotFoundException,
     );
     expect(repository.update).not.toHaveBeenCalled();
+    expect(cacheService.deleteByPrefix).not.toHaveBeenCalled();
   });
 });

@@ -35,6 +35,8 @@ import {
 } from '@nestjs/swagger';
 import { SONGS_PATH } from './types/consts/songs.const';
 import { Auth } from '@/auth/decorator/auth.decorator';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
+import { ApiPaginatedResponse } from '@/common/decorators/api-paginated-response.decorator';
 
 @ApiTags('Songs')
 @Controller(SONGS_PATH)
@@ -98,11 +100,8 @@ export class SongsController {
     example: 1,
     description: 'Page number (starts at 1)',
   })
-  @ApiOkResponse({
-    description: 'List of active songs',
-    type: Song,
-    isArray: true,
-  })
+  @ApiPaginatedResponse(Song, 'Paginated list of active songs')
+  @SerializeOptions({ type: PaginationResponseDto })
   findAll(@Query() paginationDto: PaginationDto) {
     return this.songsService.findAll(paginationDto);
   }

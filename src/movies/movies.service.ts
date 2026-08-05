@@ -2,7 +2,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Not, Repository } from 'typeorm';
 import {
   ConflictException,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -12,14 +11,16 @@ import { UpdateMovieDto } from './dto/update-movie.dto';
 import { Movie } from './entities/movie.entity';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
+import { paginate } from '@/common/helpers/paginate.helper';
 import { Cover } from '@/files/entities/cover.entity';
 import { BuildStoragePath } from './types/interfaces/build-storage-path';
 import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { CommonService } from '@/common/common.service';
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { MOVIES_PATH } from './types/consts/movies.const';
 import { EntertainmentStorage } from '@/common/abstracts/entertainment-storage.abstract';
+import { CacheService } from '@/common/cache/cache.service';
 
 @Injectable()
 export class MoviesService extends EntertainmentStorage {
@@ -28,8 +29,7 @@ export class MoviesService extends EntertainmentStorage {
     private readonly movieRepository: Repository<Movie>,
     private readonly commonService: CommonService,
     private readonly dataSource: DataSource,
-    @Inject(CACHE_MANAGER)
-    private readonly cacheManager: Cache,
+    private readonly cacheService: CacheService,
   ) {
     super(MOVIES_PATH);
   }
@@ -53,7 +53,7 @@ export class MoviesService extends EntertainmentStorage {
       file,
     );
 
-    return await this.commonService.handleTransactionWithFile(
+    const movieSaved = await this.commonService.handleTransactionWithFile(
       uploadedPath,
       this.dataSource.transaction('SERIALIZABLE', async (manager) => {
         const movie = manager.create(Movie, createMovieDto);
@@ -66,17 +66,16 @@ export class MoviesService extends EntertainmentStorage {
           movie.posterId = cover.id;
         }
 
-        await this.cacheManager.del(this.cacheKey);
         return await manager.save(movie);
       }),
     );
+
+    await this.cacheService.deleteByPrefix(this.cacheKey);
+    return movieSaved;
   }
 
-  findAll(paginationDto: PaginationDto): Promise<Movie[]> {
-    const { limit, page } = paginationDto;
-    return this.movieRepository.find({
-      take: limit,
-      skip: (page - 1) * limit,
+  findAll(paginationDto: PaginationDto): Promise<PaginationResponseDto<Movie>> {
+    return paginate(this.movieRepository, paginationDto, {
       where: { active: true },
     });
   }
@@ -116,7 +115,7 @@ export class MoviesService extends EntertainmentStorage {
     );
     const movieUpdated = this.movieRepository.merge(movie, updateMovieDto);
 
-    return await this.commonService.handleTransactionWithFile(
+    const result = await this.commonService.handleTransactionWithFile(
       uploadedPath,
       this.dataSource.transaction('SERIALIZABLE', async (manager) => {
         if (uploadedPath && !movie.posterId) {
@@ -128,18 +127,18 @@ export class MoviesService extends EntertainmentStorage {
         }
 
         await manager.update(Movie, { id }, movieUpdated);
-        await this.cacheManager.del(`${this.cacheKey}/${id}`);
-        await this.cacheManager.del(this.cacheKey);
         return movieUpdated;
       }),
     );
+
+    await this.cacheService.deleteByPrefix(this.cacheKey);
+    return result;
   }
 
   async remove(id: string): Promise<Movie> {
     const movie = await this.findOne(id);
     await this.movieRepository.update({ id }, { active: false });
-    await this.cacheManager.del(`${this.cacheKey}/${id}`);
-    await this.cacheManager.del(this.cacheKey);
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return movie;
   }
 
@@ -151,6 +150,7 @@ export class MoviesService extends EntertainmentStorage {
     }
 
     await this.movieRepository.update({ id }, { active: true });
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return movie;
   }
 

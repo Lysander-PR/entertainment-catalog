@@ -32,6 +32,7 @@ import { Genre } from './entities/genre.entity';
 import { GENRES_PATH } from './types/consts/genres.const';
 import { Auth } from '@/auth/decorator/auth.decorator';
 import { Public } from '@/auth/decorator/public.decorator';
+import { ApiPaginatedResponse } from '@/common/decorators/api-paginated-response.decorator';
 
 @ApiTags('Genres')
 @Controller(GENRES_PATH)
@@ -66,14 +67,22 @@ export class GenresController {
     example: 1,
     description: 'Page number (starts at 1)',
   })
+  @ApiPaginatedResponse(Genre, 'Paginated list of genres')
+  @Public()
+  find(@Query() paginationDto: PaginationDto) {
+    return this.genresService.find(paginationDto);
+  }
+
+  @Get('all')
+  @ApiOperation({ summary: 'Get every genre without pagination' })
   @ApiOkResponse({
-    description: 'Paginated list of genres',
+    description: 'Full list of genres',
     type: Genre,
     isArray: true,
   })
   @Public()
-  find(@Query() paginationDto: PaginationDto) {
-    return this.genresService.find(paginationDto);
+  findAll() {
+    return this.genresService.findAll();
   }
 
   @Get(':id')

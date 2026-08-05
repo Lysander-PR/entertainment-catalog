@@ -12,6 +12,7 @@ jest.mock('@/config/envs', () => ({
 
 import { CommonModule } from './common.module';
 import { CommonService } from './common.service';
+import { CacheService } from './cache/cache.service';
 import { FilesModule } from '@/files/files.module';
 
 describe('CommonModule', () => {
@@ -22,6 +23,10 @@ describe('CommonModule', () => {
       providers: [
         {
           provide: CommonService,
+          useValue: {},
+        },
+        {
+          provide: CacheService,
           useValue: {},
         },
       ],
@@ -38,6 +43,11 @@ describe('CommonModule', () => {
 
   it('should register CommonService', () => {
     const service = module.get<CommonService>(CommonService);
+    expect(service).toBeDefined();
+  });
+
+  it('should register CacheService', () => {
+    const service = module.get<CacheService>(CacheService);
     expect(service).toBeDefined();
   });
 

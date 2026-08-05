@@ -5,6 +5,7 @@ import { SongsService } from './songs.service';
 import { CreateSongDto } from './dto/create-song.dto';
 import { UpdateSongDto } from './dto/update-song.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
 import { Song } from './entities/song.entity';
 
 describe('SongsController', () => {
@@ -71,12 +72,14 @@ describe('SongsController', () => {
   it('should return a paginated list of active songs', async () => {
     const paginationDto: PaginationDto = { limit: 10, page: 1 };
 
-    jest.spyOn(service, 'findAll').mockResolvedValue([mockSong]);
+    const paginated = new PaginationResponseDto([mockSong], 1, 1, 10);
+
+    jest.spyOn(service, 'findAll').mockResolvedValue(paginated);
 
     const result = await controller.findAll(paginationDto);
 
     expect(service.findAll).toHaveBeenCalledWith(paginationDto);
-    expect(result).toEqual([mockSong]);
+    expect(result).toEqual(paginated);
   });
 
   it('should return a song by id', async () => {

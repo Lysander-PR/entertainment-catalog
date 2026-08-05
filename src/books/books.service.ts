@@ -1,6 +1,5 @@
 import {
   ConflictException,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -12,14 +11,16 @@ import { UpdateBookDto } from './dto/update-book.dto';
 import { Book } from './entities/book.entity';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
+import { paginate } from '@/common/helpers/paginate.helper';
 import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params.interface';
 import { CommonService } from '@/common/common.service';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { BuildStoragePath } from './types/interfaces/build-storage-path';
 import { Cover } from '@/files/entities/cover.entity';
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { BOOKS_PATH } from './types/consts/books.const';
 import { EntertainmentStorage } from '@/common/abstracts/entertainment-storage.abstract';
+import { CacheService } from '@/common/cache/cache.service';
 
 @Injectable()
 export class BooksService extends EntertainmentStorage {
@@ -28,8 +29,7 @@ export class BooksService extends EntertainmentStorage {
     private readonly bookRepository: Repository<Book>,
     private readonly commonService: CommonService,
     private readonly dataSource: DataSource,
-    @Inject(CACHE_MANAGER)
-    private readonly cacheManager: Cache,
+    private readonly cacheService: CacheService,
   ) {
     super(BOOKS_PATH);
   }
@@ -51,7 +51,7 @@ export class BooksService extends EntertainmentStorage {
       file,
     );
 
-    return await this.commonService.handleTransactionWithFile(
+    const bookSaved = await this.commonService.handleTransactionWithFile(
       uploadedPath,
       this.dataSource.transaction('SERIALIZABLE', async (manager) => {
         const book = manager.create(Book, createBookDto);
@@ -64,16 +64,16 @@ export class BooksService extends EntertainmentStorage {
           book.coverId = cover.id;
         }
 
-        await this.cacheManager.del(this.cacheKey);
         return await manager.save(book);
       }),
     );
+
+    await this.cacheService.deleteByPrefix(this.cacheKey);
+    return bookSaved;
   }
 
-  findAll(paginationDto: PaginationDto): Promise<Book[]> {
-    return this.bookRepository.find({
-      take: paginationDto.limit,
-      skip: (paginationDto.page - 1) * paginationDto.limit,
+  findAll(paginationDto: PaginationDto): Promise<PaginationResponseDto<Book>> {
+    return paginate(this.bookRepository, paginationDto, {
       where: { active: true },
     });
   }
@@ -107,7 +107,7 @@ export class BooksService extends EntertainmentStorage {
     );
     const bookUpdated = this.bookRepository.merge(book, updateBookDto);
 
-    return await this.commonService.handleTransactionWithFile(
+    const result = await this.commonService.handleTransactionWithFile(
       uploadedPath,
       this.dataSource.transaction('SERIALIZABLE', async (manager) => {
         if (uploadedPath && !book.coverId) {
@@ -118,18 +118,18 @@ export class BooksService extends EntertainmentStorage {
           bookUpdated.coverId = cover.id;
         }
 
-        await this.cacheManager.del(`${this.cacheKey}/${id}`);
-        await this.cacheManager.del(this.cacheKey);
         return await this.dataSource.manager.save(bookUpdated);
       }),
     );
+
+    await this.cacheService.deleteByPrefix(this.cacheKey);
+    return result;
   }
 
   async remove(id: string): Promise<Book> {
     const book = await this.findOne(id);
     await this.bookRepository.update({ id }, { active: false });
-    await this.cacheManager.del(`${this.cacheKey}/${id}`);
-    await this.cacheManager.del(this.cacheKey);
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return book;
   }
 
@@ -140,6 +140,7 @@ export class BooksService extends EntertainmentStorage {
     }
 
     await this.bookRepository.update({ id }, { active: true });
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return book;
   }
 

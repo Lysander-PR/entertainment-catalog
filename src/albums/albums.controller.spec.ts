@@ -5,6 +5,7 @@ import { AlbumsService } from './albums.service';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
 import { Album } from './entities/album.entity';
 import { Song } from '@/songs/entities/song.entity';
 
@@ -105,12 +106,14 @@ describe('AlbumsController', () => {
   it('should return a paginated list of active albums', async () => {
     const paginationDto: PaginationDto = { limit: 10, page: 1 };
 
-    jest.spyOn(service, 'find').mockResolvedValue([mockAlbum]);
+    const paginated = new PaginationResponseDto([mockAlbum], 1, 1, 10);
+
+    jest.spyOn(service, 'find').mockResolvedValue(paginated);
 
     const result = await controller.find(paginationDto);
 
     expect(service.find).toHaveBeenCalledWith(paginationDto);
-    expect(result).toEqual([mockAlbum]);
+    expect(result).toEqual(paginated);
   });
 
   it('should return an album by id', async () => {

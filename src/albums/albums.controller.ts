@@ -42,6 +42,8 @@ import {
 import { ALBUMS_PATH } from './types/consts/albums.const';
 import { Auth } from '@/auth/decorator/auth.decorator';
 import { Public } from '@/auth/decorator/public.decorator';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
+import { ApiPaginatedResponse } from '@/common/decorators/api-paginated-response.decorator';
 
 @ApiTags('Albums')
 @Controller(ALBUMS_PATH)
@@ -146,11 +148,8 @@ export class AlbumsController {
     example: 1,
     description: 'Page number (starts at 1)',
   })
-  @ApiOkResponse({
-    description: 'Paginated list of active albums',
-    type: Album,
-    isArray: true,
-  })
+  @ApiPaginatedResponse(Album, 'Paginated list of active albums')
+  @SerializeOptions({ type: PaginationResponseDto })
   @Public()
   find(@Query() paginationDto: PaginationDto) {
     return this.albumsService.find(paginationDto);

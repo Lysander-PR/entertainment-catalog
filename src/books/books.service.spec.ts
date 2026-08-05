@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource, Not, Repository } from 'typeorm';
 
@@ -12,18 +11,20 @@ import { Cover } from '@/files/entities/cover.entity';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
 import { CommonService } from '@/common/common.service';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { BOOKS_PATH } from './types/consts/books.const';
 import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
+import { CacheService } from '@/common/cache/cache.service';
 
 describe('BooksService', () => {
   let service: BooksService;
   let repository: Repository<Book>;
   let commonService: CommonService;
   let dataSource: DataSource;
-  let cacheManager: { del: jest.Mock };
+  let cacheService: { deleteByPrefix: jest.Mock };
   let managerMock: {
     create: jest.Mock;
     save: jest.Mock;
@@ -53,7 +54,7 @@ describe('BooksService', () => {
 
   beforeEach(async () => {
     const repositoryMock = {
-      find: jest.fn(),
+      findAndCount: jest.fn(),
       findOneBy: jest.fn(),
       findOne: jest.fn(),
       merge: jest.fn(),
@@ -81,7 +82,7 @@ describe('BooksService', () => {
       manager: { save: jest.fn() },
     };
 
-    const cacheManagerMock = { del: jest.fn() };
+    const cacheServiceMock = { deleteByPrefix: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -89,7 +90,7 @@ describe('BooksService', () => {
         { provide: getRepositoryToken(Book), useValue: repositoryMock },
         { provide: CommonService, useValue: commonServiceMock },
         { provide: DataSource, useValue: dataSourceMock },
-        { provide: CACHE_MANAGER, useValue: cacheManagerMock },
+        { provide: CacheService, useValue: cacheServiceMock },
       ],
     }).compile();
 
@@ -97,7 +98,7 @@ describe('BooksService', () => {
     repository = module.get<Repository<Book>>(getRepositoryToken(Book));
     commonService = module.get<CommonService>(CommonService);
     dataSource = module.get<DataSource>(DataSource);
-    cacheManager = module.get(CACHE_MANAGER);
+    cacheService = module.get(CacheService);
   });
 
   afterEach(() => {
@@ -137,7 +138,7 @@ describe('BooksService', () => {
     );
     expect(managerMock.create).toHaveBeenCalledWith(Book, dto);
     expect(managerMock.getRepository).not.toHaveBeenCalled();
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(managerMock.save).toHaveBeenCalledTimes(1);
     expect(result).toEqual(mockBook);
   });
@@ -175,16 +176,16 @@ describe('BooksService', () => {
   it('should return a paginated list of active books', async () => {
     const paginationDto: PaginationDto = { limit: 5, page: 2 };
 
-    jest.spyOn(repository, 'find').mockResolvedValue([mockBook]);
+    jest.spyOn(repository, 'findAndCount').mockResolvedValue([[mockBook], 11]);
 
     const result = await service.findAll(paginationDto);
 
-    expect(repository.find).toHaveBeenCalledWith({
+    expect(repository.findAndCount).toHaveBeenCalledWith({
       take: paginationDto.limit,
       skip: (paginationDto.page - 1) * paginationDto.limit,
       where: { active: true },
     });
-    expect(result).toEqual([mockBook]);
+    expect(result).toEqual(new PaginationResponseDto([mockBook], 11, 2, 5));
   });
 
   it('should return a book by id', async () => {
@@ -218,8 +219,7 @@ describe('BooksService', () => {
     const result = await service.update(mockBook.id, updateDto);
 
     expect(repository.merge).toHaveBeenCalledWith(mockBook, updateDto);
-    expect(cacheManager.del).toHaveBeenCalledWith(`${cacheKey}/${mockBook.id}`);
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(dataSource.manager.save).toHaveBeenCalledWith(mergedBook);
     expect(result).toEqual(mergedBook);
   });
@@ -294,12 +294,11 @@ describe('BooksService', () => {
       { id: mockBook.id },
       { active: false },
     );
-    expect(cacheManager.del).toHaveBeenCalledWith(`${cacheKey}/${mockBook.id}`);
-    expect(cacheManager.del).toHaveBeenCalledWith(cacheKey);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(result).toEqual(mockBook);
   });
 
-  it('should reactivate a book', async () => {
+  it('should reactivate a book and invalidate the cache prefix', async () => {
     const inactiveBook = { ...mockBook, active: false } as Book;
 
     jest.spyOn(repository, 'findOne').mockResolvedValue(inactiveBook);
@@ -314,6 +313,7 @@ describe('BooksService', () => {
       { id: mockBook.id },
       { active: true },
     );
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(result).toEqual(inactiveBook);
   });
 
@@ -324,5 +324,6 @@ describe('BooksService', () => {
       NotFoundException,
     );
     expect(repository.update).not.toHaveBeenCalled();
+    expect(cacheService.deleteByPrefix).not.toHaveBeenCalled();
   });
 });

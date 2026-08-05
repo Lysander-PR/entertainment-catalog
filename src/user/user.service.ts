@@ -1,12 +1,10 @@
 import {
   ConflictException,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -15,6 +13,7 @@ import { UserAlreadyExistsParams } from './types/interfaces/user-already-exists.
 import { hashData } from '@/common/helpers/hash.helper';
 import { USER_PATH } from './types/consts/user.const';
 import { CacheKey } from '@/common/abstracts/cache-key.abstract';
+import { CacheService } from '@/common/cache/cache.service';
 import { isUUID } from 'class-validator';
 
 @Injectable()
@@ -22,8 +21,7 @@ export class UserService extends CacheKey {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @Inject(CACHE_MANAGER)
-    private readonly cacheManager: Cache,
+    private readonly cacheService: CacheService,
   ) {
     super(USER_PATH);
   }
@@ -38,6 +36,7 @@ export class UserService extends CacheKey {
       password: hashData(password),
     });
 
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return this.userRepository.save(user);
   }
 
@@ -71,14 +70,14 @@ export class UserService extends CacheKey {
     }
 
     await this.userRepository.update({ id }, userUpdated);
-    await this.cacheManager.del(`${this.cacheKey}/${id}`);
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return userUpdated;
   }
 
   async softRemove(id: string): Promise<User> {
     const user = await this.findOne(id);
     await this.userRepository.update({ id }, { active: false });
-    await this.cacheManager.del(`${this.cacheKey}/${id}`);
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return user;
   }
 
@@ -90,6 +89,7 @@ export class UserService extends CacheKey {
     }
 
     await this.userRepository.update({ id }, { active: true });
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return user;
   }
 

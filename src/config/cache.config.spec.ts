@@ -20,6 +20,7 @@ describe('cacheConfig', () => {
     expect(mockCreateKeyv).toHaveBeenCalledWith('redis://localhost:6379', {
       connectionTimeout: 5000,
       throwOnConnectError: true,
+      useUnlink: true,
     });
   });
 

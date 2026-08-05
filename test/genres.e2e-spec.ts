@@ -174,16 +174,93 @@ describe('Genres (e2e)', () => {
   });
 
   describe('GET /api/genres', () => {
-    it('is public and returns a list of genres', async () => {
+    it('is public and returns a paginated list of genres', async () => {
       const response = await request(app.getHttpServer())
         .get('/api/genres')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body).toEqual(
+        expect.objectContaining({
+          data: expect.any(Array),
+          total: expect.any(Number),
+          currentPage: expect.any(Number),
+          totalPages: expect.any(Number),
+          hasNextPage: expect.any(Boolean),
+          hasPreviousPage: expect.any(Boolean),
+        }),
+      );
+      expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.currentPage).toBe(1);
+      expect(response.body.hasPreviousPage).toBe(false);
+      expect(response.body.total).toBeGreaterThanOrEqual(
+        response.body.data.length,
+      );
+      (response.body.data as Record<string, unknown>[]).forEach((genre) =>
+        expectGenreShape(genre),
+      );
+    });
+
+    it('reports the unpaginated total and the page flags', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/genres?limit=1&page=1')
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.totalPages).toBe(response.body.total);
+      expect(response.body.hasNextPage).toBe(response.body.total > 1);
+      expect(response.body.hasPreviousPage).toBe(false);
+    });
+  });
+
+  describe('GET /api/genres/all', () => {
+    it('is public and returns every genre as a plain array', async () => {
+      const payload: CreateGenreDto = { description: uniqueWord('Genre') };
+
+      const created = await request(app.getHttpServer())
+        .post('/api/genres')
+        .set('Authorization', authHeader)
+        .send(payload)
+        .expect(201);
+      genreIds.push(created.body.id);
+
+      const response = await request(app.getHttpServer())
+        .get('/api/genres/all')
+        .expect(200);
+
+      expect(response.body).toBeInstanceOf(Array);
       expect(response.body.length).toBeGreaterThan(0);
       (response.body as Record<string, unknown>[]).forEach((genre) =>
         expectGenreShape(genre),
       );
+      expect(
+        (response.body as Genre[]).some(
+          (genre) => genre.id === created.body.id,
+        ),
+      ).toBe(true);
+    });
+
+    it('reflects a genre created after a previous request (cache is invalidated)', async () => {
+      const before = await request(app.getHttpServer())
+        .get('/api/genres/all')
+        .expect(200);
+
+      const payload: CreateGenreDto = { description: uniqueWord('Genre') };
+
+      const created = await request(app.getHttpServer())
+        .post('/api/genres')
+        .set('Authorization', authHeader)
+        .send(payload)
+        .expect(201);
+      genreIds.push(created.body.id);
+
+      const after = await request(app.getHttpServer())
+        .get('/api/genres/all')
+        .expect(200);
+
+      expect(after.body).toHaveLength((before.body as Genre[]).length + 1);
+      expect(
+        (after.body as Genre[]).some((genre) => genre.id === created.body.id),
+      ).toBe(true);
     });
   });
 

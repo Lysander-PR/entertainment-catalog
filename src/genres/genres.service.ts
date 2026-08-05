@@ -1,5 +1,4 @@
 import {
-  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -12,17 +11,18 @@ import { CreateGenreDto } from './dto/create-genre.dto';
 import { UpdateGenreDto } from './dto/update-genre.dto';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
+import { paginate } from '@/common/helpers/paginate.helper';
 import { GENRES_PATH } from './types/consts/genres.const';
 import { CacheKey } from '@/common/abstracts/cache-key.abstract';
+import { CacheService } from '@/common/cache/cache.service';
 
 @Injectable()
 export class GenresService extends CacheKey {
   constructor(
     @InjectRepository(Genre)
     private readonly genreRepository: Repository<Genre>,
-    @Inject(CACHE_MANAGER)
-    private readonly cacheManager: Cache,
+    private readonly cacheService: CacheService,
   ) {
     super(GENRES_PATH);
   }
@@ -31,15 +31,16 @@ export class GenresService extends CacheKey {
     const genre = await this.genreRepository.save({
       genre: capitalize(createGenreDto.description),
     });
-    await this.cacheManager.del(this.cacheKey);
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return genre;
   }
 
-  find({ limit, page }: PaginationDto): Promise<Genre[]> {
-    return this.genreRepository.find({
-      take: limit,
-      skip: (page - 1) * limit,
-    });
+  find(paginationDto: PaginationDto): Promise<PaginationResponseDto<Genre>> {
+    return paginate(this.genreRepository, paginationDto);
+  }
+
+  findAll(): Promise<Genre[]> {
+    return this.genreRepository.find();
   }
 
   async findOne(id: string): Promise<Genre> {
@@ -67,8 +68,7 @@ export class GenresService extends CacheKey {
       );
     }
 
-    await this.cacheManager.del(`${this.cacheKey}/${id}`);
-    await this.cacheManager.del(this.cacheKey);
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return genreUpdated;
   }
 
@@ -82,8 +82,7 @@ export class GenresService extends CacheKey {
       );
     }
 
-    await this.cacheManager.del(`${this.cacheKey}/${id}`);
-    await this.cacheManager.del(this.cacheKey);
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return genre;
   }
 }

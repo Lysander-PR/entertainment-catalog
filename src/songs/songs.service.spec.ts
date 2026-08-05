@@ -14,6 +14,7 @@ import { Song } from './entities/song.entity';
 import { CreateSongDto } from './dto/create-song.dto';
 import { UpdateSongDto } from './dto/update-song.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { SONGS_PATH } from './types/consts/songs.const';
 import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
@@ -45,7 +46,7 @@ describe('SongsService', () => {
     const repositoryMock = {
       save: jest.fn(),
       create: jest.fn(),
-      find: jest.fn(),
+      findAndCount: jest.fn(),
       findOne: jest.fn(),
       findOneBy: jest.fn(),
       merge: jest.fn(),
@@ -103,17 +104,17 @@ describe('SongsService', () => {
   it('should return a paginated list of active songs with relations', async () => {
     const paginationDto: PaginationDto = { limit: 5, page: 2 };
 
-    jest.spyOn(repository, 'find').mockResolvedValue([mockSong]);
+    jest.spyOn(repository, 'findAndCount').mockResolvedValue([[mockSong], 11]);
 
     const result = await service.findAll(paginationDto);
 
-    expect(repository.find).toHaveBeenCalledWith({
+    expect(repository.findAndCount).toHaveBeenCalledWith({
       take: paginationDto.limit,
       skip: (paginationDto.page - 1) * paginationDto.limit,
       where: { active: true },
       relations: { album: true, genre: true },
     });
-    expect(result).toEqual([mockSong]);
+    expect(result).toEqual(new PaginationResponseDto([mockSong], 11, 2, 5));
   });
 
   it('should return a song by id with relations', async () => {

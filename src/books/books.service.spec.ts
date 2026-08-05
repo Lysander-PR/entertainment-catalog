@@ -12,6 +12,7 @@ import { Cover } from '@/files/entities/cover.entity';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
 import { CommonService } from '@/common/common.service';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
@@ -53,7 +54,7 @@ describe('BooksService', () => {
 
   beforeEach(async () => {
     const repositoryMock = {
-      find: jest.fn(),
+      findAndCount: jest.fn(),
       findOneBy: jest.fn(),
       findOne: jest.fn(),
       merge: jest.fn(),
@@ -175,16 +176,16 @@ describe('BooksService', () => {
   it('should return a paginated list of active books', async () => {
     const paginationDto: PaginationDto = { limit: 5, page: 2 };
 
-    jest.spyOn(repository, 'find').mockResolvedValue([mockBook]);
+    jest.spyOn(repository, 'findAndCount').mockResolvedValue([[mockBook], 11]);
 
     const result = await service.findAll(paginationDto);
 
-    expect(repository.find).toHaveBeenCalledWith({
+    expect(repository.findAndCount).toHaveBeenCalledWith({
       take: paginationDto.limit,
       skip: (paginationDto.page - 1) * paginationDto.limit,
       where: { active: true },
     });
-    expect(result).toEqual([mockBook]);
+    expect(result).toEqual(new PaginationResponseDto([mockBook], 11, 2, 5));
   });
 
   it('should return a book by id', async () => {

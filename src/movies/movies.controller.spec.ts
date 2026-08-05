@@ -5,6 +5,7 @@ import { MoviesService } from './movies.service';
 import { CreateMovieDto } from './dto/create-movie.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
 import { Movie } from './entities/movie.entity';
 
 describe('MoviesController', () => {
@@ -87,12 +88,14 @@ describe('MoviesController', () => {
   it('should return a paginated list of active movies', async () => {
     const paginationDto: PaginationDto = { limit: 10, page: 1 };
 
-    jest.spyOn(service, 'findAll').mockResolvedValue([mockMovie]);
+    const paginated = new PaginationResponseDto([mockMovie], 1, 1, 10);
+
+    jest.spyOn(service, 'findAll').mockResolvedValue(paginated);
 
     const result = await controller.findAll(paginationDto);
 
     expect(service.findAll).toHaveBeenCalledWith(paginationDto);
-    expect(result).toEqual([mockMovie]);
+    expect(result).toEqual(paginated);
   });
 
   it('should return a movie by id', async () => {

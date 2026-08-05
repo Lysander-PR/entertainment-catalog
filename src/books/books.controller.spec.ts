@@ -5,6 +5,7 @@ import { BooksService } from './books.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
 import { Book } from './entities/book.entity';
 
 describe('BooksController', () => {
@@ -81,12 +82,14 @@ describe('BooksController', () => {
   it('should return a paginated list of active books', async () => {
     const paginationDto: PaginationDto = { limit: 10, page: 1 };
 
-    jest.spyOn(service, 'findAll').mockResolvedValue([mockBook]);
+    const paginated = new PaginationResponseDto([mockBook], 1, 1, 10);
+
+    jest.spyOn(service, 'findAll').mockResolvedValue(paginated);
 
     const result = await controller.findAll(paginationDto);
 
     expect(service.findAll).toHaveBeenCalledWith(paginationDto);
-    expect(result).toEqual([mockBook]);
+    expect(result).toEqual(paginated);
   });
 
   it('should return a book by id', async () => {

@@ -12,6 +12,7 @@ import { Cover } from '@/files/entities/cover.entity';
 import { CreateMovieDto } from './dto/create-movie.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
 import { CommonService } from '@/common/common.service';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
@@ -58,7 +59,7 @@ describe('MoviesService', () => {
 
   beforeEach(async () => {
     const repositoryMock = {
-      find: jest.fn(),
+      findAndCount: jest.fn(),
       findOneBy: jest.fn(),
       merge: jest.fn(),
       update: jest.fn(),
@@ -194,16 +195,16 @@ describe('MoviesService', () => {
   it('should return a paginated list of active movies', async () => {
     const paginationDto: PaginationDto = { limit: 5, page: 2 };
 
-    jest.spyOn(repository, 'find').mockResolvedValue([mockMovie]);
+    jest.spyOn(repository, 'findAndCount').mockResolvedValue([[mockMovie], 11]);
 
     const result = await service.findAll(paginationDto);
 
-    expect(repository.find).toHaveBeenCalledWith({
+    expect(repository.findAndCount).toHaveBeenCalledWith({
       take: paginationDto.limit,
       skip: (paginationDto.page - 1) * paginationDto.limit,
       where: { active: true },
     });
-    expect(result).toEqual([mockMovie]);
+    expect(result).toEqual(new PaginationResponseDto([mockMovie], 11, 2, 5));
   });
 
   it('should return a movie by id', async () => {

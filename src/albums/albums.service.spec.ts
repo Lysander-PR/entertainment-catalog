@@ -17,6 +17,7 @@ import { Cover } from '@/files/entities/cover.entity';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
 import { CommonService } from '@/common/common.service';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
@@ -76,7 +77,7 @@ describe('AlbumsService', () => {
 
   beforeEach(async () => {
     const repositoryMock = {
-      find: jest.fn(),
+      findAndCount: jest.fn(),
       findOneBy: jest.fn(),
       merge: jest.fn(),
       update: jest.fn(),
@@ -218,16 +219,16 @@ describe('AlbumsService', () => {
   it('should return a paginated list of active albums', async () => {
     const paginationDto: PaginationDto = { limit: 5, page: 2 };
 
-    jest.spyOn(repository, 'find').mockResolvedValue([mockAlbum]);
+    jest.spyOn(repository, 'findAndCount').mockResolvedValue([[mockAlbum], 11]);
 
     const result = await service.find(paginationDto);
 
-    expect(repository.find).toHaveBeenCalledWith({
+    expect(repository.findAndCount).toHaveBeenCalledWith({
       take: paginationDto.limit,
       skip: (paginationDto.page - 1) * paginationDto.limit,
       where: { active: true },
     });
-    expect(result).toEqual([mockAlbum]);
+    expect(result).toEqual(new PaginationResponseDto([mockAlbum], 11, 2, 5));
   });
 
   it('should return an album by id', async () => {

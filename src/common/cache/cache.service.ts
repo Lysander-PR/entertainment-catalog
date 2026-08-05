@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import KeyvRedis from '@keyv/redis';
 
 @Injectable()
 export class CacheService {
-  private readonly logger = new Logger(CacheService.name);
+  private readonly scanBatchSize = 1000;
 
   constructor(
     @Inject(CACHE_MANAGER)
@@ -13,22 +12,29 @@ export class CacheService {
   ) {}
 
   async deleteByPrefix(prefix: string): Promise<void> {
-    const allStores = this.cacheManager.stores;
+    const redisStore = this.cacheManager.stores
+      .map((keyv): unknown => keyv.store)
+      .find((store): store is KeyvRedis<unknown> => store instanceof KeyvRedis);
 
-    const redisStore = allStores.find(
-      (store) => store.store instanceof KeyvRedis,
-    );
-
-    if (redisStore) {
-      const store = redisStore.store;
-
-      const iterator = store.iterator();
-      for await (const [key] of iterator) {
-        if (key.startsWith(prefix)) {
-          this.logger.log(`Key ${key}, Value ${await store.get(key)}`);
-          await redisStore.delete(key);
-        }
-      }
+    if (!redisStore) {
+      return;
     }
+
+    const client = await redisStore.getClient();
+    let cursor = '0';
+
+    do {
+      const result = await client.scan(cursor, {
+        MATCH: `${prefix}*`,
+        COUNT: this.scanBatchSize,
+        TYPE: 'string',
+      });
+
+      cursor = result.cursor.toString();
+
+      if (result.keys.length > 0) {
+        await client.unlink(result.keys);
+      }
+    } while (cursor !== '0');
   }
 }

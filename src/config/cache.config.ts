@@ -8,6 +8,7 @@ export const cacheConfig: CacheModuleOptions = {
     createKeyv(envs.REDIS_URL, {
       connectionTimeout: 5000,
       throwOnConnectError: true,
+      useUnlink: true,
     }),
   ],
 };

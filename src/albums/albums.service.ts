@@ -1,6 +1,5 @@
 import {
   ConflictException,
-  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -21,9 +20,9 @@ import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { BuildStoragePath } from './types/interfaces/build-storage-path';
 import { Cover } from '@/files/entities/cover.entity';
 import { Song } from '@/songs/entities/song.entity';
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ALBUMS_PATH } from './types/consts/albums.const';
 import { EntertainmentStorage } from '@/common/abstracts/entertainment-storage.abstract';
+import { CacheService } from '@/common/cache/cache.service';
 
 @Injectable()
 export class AlbumsService extends EntertainmentStorage {
@@ -32,8 +31,7 @@ export class AlbumsService extends EntertainmentStorage {
     private readonly albumRepository: Repository<Album>,
     private readonly commonService: CommonService,
     private readonly dataSource: DataSource,
-    @Inject(CACHE_MANAGER)
-    private readonly cacheManager: Cache,
+    private readonly cacheService: CacheService,
   ) {
     super(ALBUMS_PATH);
   }
@@ -55,7 +53,7 @@ export class AlbumsService extends EntertainmentStorage {
       file,
     );
 
-    return await this.commonService.handleTransactionWithFile(
+    const result = await this.commonService.handleTransactionWithFile(
       uploadedPath,
       this.dataSource.transaction('SERIALIZABLE', async (manager) => {
         const songs = manager.create(Song, createAlbumDto.songs);
@@ -77,10 +75,12 @@ export class AlbumsService extends EntertainmentStorage {
           }),
         );
 
-        await this.cacheManager.del(this.cacheKey);
         return albumSaved;
       }),
     );
+
+    await this.cacheService.deleteByPrefix(this.cacheKey);
+    return result;
   }
 
   find(paginationDto: PaginationDto): Promise<PaginationResponseDto<Album>> {
@@ -121,7 +121,7 @@ export class AlbumsService extends EntertainmentStorage {
       songs: album.songs,
     });
 
-    return await this.commonService.handleTransactionWithFile(
+    const result = await this.commonService.handleTransactionWithFile(
       uploadedPath,
       this.dataSource.transaction('SERIALIZABLE', async (manager) => {
         if (uploadedPath && !album.coverId) {
@@ -132,11 +132,12 @@ export class AlbumsService extends EntertainmentStorage {
           albumUpdated.coverId = cover.id;
         }
 
-        await this.cacheManager.del(`${this.cacheKey}/${id}`);
-        await this.cacheManager.del(this.cacheKey);
         return await manager.save(albumUpdated);
       }),
     );
+
+    await this.cacheService.deleteByPrefix(this.cacheKey);
+    return result;
   }
 
   async remove(id: string): Promise<Album> {
@@ -153,8 +154,7 @@ export class AlbumsService extends EntertainmentStorage {
       .getRepository(Song)
       .update({ albumId: id }, { active: false });
 
-    await this.cacheManager.del(`${this.cacheKey}/${id}`);
-    await this.cacheManager.del(this.cacheKey);
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return album;
   }
 
@@ -170,6 +170,7 @@ export class AlbumsService extends EntertainmentStorage {
       .getRepository(Song)
       .update({ albumId: id }, { active: true });
 
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return album;
   }
 

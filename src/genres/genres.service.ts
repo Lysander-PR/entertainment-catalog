@@ -1,5 +1,4 @@
 import {
-  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -14,17 +13,16 @@ import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
 import { paginate } from '@/common/helpers/paginate.helper';
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { GENRES_PATH } from './types/consts/genres.const';
 import { CacheKey } from '@/common/abstracts/cache-key.abstract';
+import { CacheService } from '@/common/cache/cache.service';
 
 @Injectable()
 export class GenresService extends CacheKey {
   constructor(
     @InjectRepository(Genre)
     private readonly genreRepository: Repository<Genre>,
-    @Inject(CACHE_MANAGER)
-    private readonly cacheManager: Cache,
+    private readonly cacheService: CacheService,
   ) {
     super(GENRES_PATH);
   }
@@ -33,7 +31,7 @@ export class GenresService extends CacheKey {
     const genre = await this.genreRepository.save({
       genre: capitalize(createGenreDto.description),
     });
-    await this.cacheManager.del(this.cacheKey);
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return genre;
   }
 
@@ -70,8 +68,7 @@ export class GenresService extends CacheKey {
       );
     }
 
-    await this.cacheManager.del(`${this.cacheKey}/${id}`);
-    await this.cacheManager.del(this.cacheKey);
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return genreUpdated;
   }
 
@@ -85,8 +82,7 @@ export class GenresService extends CacheKey {
       );
     }
 
-    await this.cacheManager.del(`${this.cacheKey}/${id}`);
-    await this.cacheManager.del(this.cacheKey);
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return genre;
   }
 }

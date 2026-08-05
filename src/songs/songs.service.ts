@@ -1,6 +1,5 @@
 import {
   ConflictException,
-  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -16,17 +15,16 @@ import { PaginationDto } from '@/common/dto/pagination.dto';
 import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
 import { paginate } from '@/common/helpers/paginate.helper';
 import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params.interface';
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { SONGS_PATH } from './types/consts/songs.const';
 import { CacheKey } from '@/common/abstracts/cache-key.abstract';
+import { CacheService } from '@/common/cache/cache.service';
 
 @Injectable()
 export class SongsService extends CacheKey {
   constructor(
     @InjectRepository(Song)
     private readonly songRepository: Repository<Song>,
-    @Inject(CACHE_MANAGER)
-    private readonly cacheManager: Cache,
+    private readonly cacheService: CacheService,
   ) {
     super(SONGS_PATH);
   }
@@ -39,7 +37,7 @@ export class SongsService extends CacheKey {
 
     const song = this.songRepository.create(createSongDto);
     const songSaved = await this.songRepository.save(song);
-    await this.cacheManager.del(this.cacheKey);
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return songSaved;
   }
 
@@ -81,16 +79,14 @@ export class SongsService extends CacheKey {
       );
     }
 
-    await this.cacheManager.del(`${this.cacheKey}/${id}`);
-    await this.cacheManager.del(this.cacheKey);
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return songUpdated;
   }
 
   async remove(id: string): Promise<Song> {
     const song = await this.findOne(id);
     await this.songRepository.update({ id }, { active: false });
-    await this.cacheManager.del(`${this.cacheKey}/${id}`);
-    await this.cacheManager.del(this.cacheKey);
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return song;
   }
 
@@ -102,6 +98,7 @@ export class SongsService extends CacheKey {
     }
 
     await this.songRepository.update({ id }, { active: true });
+    await this.cacheService.deleteByPrefix(this.cacheKey);
     return song;
   }
 

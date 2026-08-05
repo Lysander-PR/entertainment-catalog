@@ -12,6 +12,8 @@ import { CreateGenreDto } from './dto/create-genre.dto';
 import { UpdateGenreDto } from './dto/update-genre.dto';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
+import { paginate } from '@/common/helpers/paginate.helper';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { GENRES_PATH } from './types/consts/genres.const';
 import { CacheKey } from '@/common/abstracts/cache-key.abstract';
@@ -35,11 +37,12 @@ export class GenresService extends CacheKey {
     return genre;
   }
 
-  find({ limit, page }: PaginationDto): Promise<Genre[]> {
-    return this.genreRepository.find({
-      take: limit,
-      skip: (page - 1) * limit,
-    });
+  find(paginationDto: PaginationDto): Promise<PaginationResponseDto<Genre>> {
+    return paginate(this.genreRepository, paginationDto);
+  }
+
+  findAll(): Promise<Genre[]> {
+    return this.genreRepository.find();
   }
 
   async findOne(id: string): Promise<Genre> {

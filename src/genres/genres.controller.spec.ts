@@ -5,6 +5,7 @@ import { GenresService } from './genres.service';
 import { CreateGenreDto } from './dto/create-genre.dto';
 import { UpdateGenreDto } from './dto/update-genre.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
 import { Genre } from './entities/genre.entity';
 
 describe('GenresController', () => {
@@ -20,6 +21,7 @@ describe('GenresController', () => {
     const serviceMock = {
       create: jest.fn(),
       find: jest.fn(),
+      findAll: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
@@ -52,11 +54,22 @@ describe('GenresController', () => {
   it('should return a paginated list of genres', async () => {
     const paginationDto: PaginationDto = { limit: 10, page: 1 };
 
-    jest.spyOn(service, 'find').mockResolvedValue([mockGenre]);
+    const paginated = new PaginationResponseDto([mockGenre], 1, 1, 10);
+
+    jest.spyOn(service, 'find').mockResolvedValue(paginated);
 
     const result = await controller.find(paginationDto);
 
     expect(service.find).toHaveBeenCalledWith(paginationDto);
+    expect(result).toEqual(paginated);
+  });
+
+  it('should return every genre without pagination', async () => {
+    jest.spyOn(service, 'findAll').mockResolvedValue([mockGenre]);
+
+    const result = await controller.findAll();
+
+    expect(service.findAll).toHaveBeenCalledWith();
     expect(result).toEqual([mockGenre]);
   });
 

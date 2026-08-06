@@ -38,7 +38,7 @@ describe('databaseConfig', () => {
 });
 
 describe('databaseConfig in production', () => {
-  it('should enable ssl', () => {
+  it('should not enable ssl and should disable synchronize', () => {
     jest.resetModules();
     jest.doMock('./envs', () => ({
       envs: {
@@ -53,6 +53,7 @@ describe('databaseConfig in production', () => {
 
     const { databaseConfig } = require('./database.config');
 
-    expect(databaseConfig.ssl).toEqual({ rejectUnauthorized: false });
+    expect(databaseConfig.ssl).toBe(false);
+    expect(databaseConfig.synchronize).toBe(false);
   });
 });

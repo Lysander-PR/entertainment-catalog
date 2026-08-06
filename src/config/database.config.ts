@@ -10,5 +10,5 @@ export const databaseConfig: TypeOrmModuleOptions = {
   database: envs.DB_NAME,
   autoLoadEntities: true,
   synchronize: !isProd,
-  ssl: isProd ? { rejectUnauthorized: false } : false,
+  ssl: false,
 };

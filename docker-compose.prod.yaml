@@ -55,6 +55,7 @@ services:
     container_name: nginx-server
     image: nginx:alpine
     restart: unless-stopped
+    command: ['nginx', '-g', 'daemon off; user root;']
     ports:
       - '80:80'
       - '443:443'

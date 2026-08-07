@@ -1,26 +1,57 @@
 services:
-  app:
-    container_name: entertainments
-    image: lysanderpr/entertainments:1.0.0
+  postgres:
+    container_name: entertainments-db
+    image: postgres:16-alpine
+    restart: unless-stopped
     ports:
-      - ${PORT}:3000
-    restart: always
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     environment:
-      - NODE_ENV=prod
-      - PORT=${PORT}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_KEY=${SUPABASE_KEY}
-      - SUPABASE_BUCKET=${SUPABASE_BUCKET}
-      - REDIS_URL=${REDIS_URL}
-      - JWT_SECRET=${JWT_SECRET}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
   redis:
     container_name: redis-server
-    image: redis:8.6.3
-    restart: always
+    image: redis:7-alpine
+    restart: unless-stopped
+  app1:
+    container_name: app1
+    image: lysanderpr/entertainments:latest
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+    env_file: .env
+  app2:
+    container_name: app2
+    image: lysanderpr/entertainments:latest
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+    env_file: .env
+  app3:
+    container_name: app3
+    image: lysanderpr/entertainments:latest
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+    env_file: .env
+  nginx:
+    container_name: nginx-server
+    image: nginx:alpine
+    restart: unless-stopped
     ports:
-      - 6379:6379
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app1
+      - app2
+      - app3
+
+volumes:
+  pgdata:

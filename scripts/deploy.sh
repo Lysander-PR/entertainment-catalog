@@ -47,7 +47,7 @@ fi
 # IF THE REPO BECOMES PRIVATE THIS STOPS WORKING (404). In that case they would
 # have to be uploaded to S3 from the runner or embedded in the SSM command.
 echo "==> Downloading infrastructure files"
-for f in docker-compose.prod.yaml nginx.conf; do
+for f in docker-compose.prod.yaml nginx.conf nginx-main.conf; do
   curl -fsSL "$RAW_BASE/$GIT_SHA/$f" -o "$APP_DIR/$f.new"
   mv "$APP_DIR/$f.new" "$APP_DIR/$f"
   # Keep them editable by ubuntu: SSM runs as root and otherwise they could not
@@ -97,7 +97,7 @@ $COMPOSE up -d --wait
 # /api serves the Swagger UI and responds 200 without authentication.
 echo "==> Checking that the API responds"
 for i in $(seq 1 10); do
-  code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost/api || true)
+  code=$(curl -sk -o /dev/null -w '%{http_code}' https://localhost/api || true)
   if [ "$code" = "200" ]; then
     echo "OK: the API responds 200"
     break

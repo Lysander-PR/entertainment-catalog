@@ -75,6 +75,7 @@ jobs:
   build:
     needs: test
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout repository
@@ -123,3 +124,29 @@ jobs:
           tags: |
             ${{ env.DOCKER_USER }}/${{ env.IMAGE_NAME }}:${{ env.NEW_VERSION }}
             ${{ env.DOCKER_USER }}/${{ env.IMAGE_NAME }}:latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          IMAGE_NAME: 'entertainments'
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        with:
+          host: ${{ env.HOST }}
+          username: ${{ env.USER }}
+          key: ${{ env.SSH_KEY }}
+          envs: ${{ env.DOCKER_USER }}/${{ env.IMAGE_NAME }}:latest
+          script: |
+            cd ~/entertainment-catalog
+            git pull origin main
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d
+            docker image prune -f

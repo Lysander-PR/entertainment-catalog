@@ -155,6 +155,14 @@ jobs:
         run: |
           set -euo pipefail
 
+          # SSM joins the "commands" entries into a single script and runs it
+          # with /bin/sh, which on Ubuntu is dash. dash does not support
+          # "set -o pipefail", so passing deploy.sh as plain text fails.
+          #
+          # That is why it is sent base64-encoded and run through bash
+          # explicitly: the script runs under the interpreter it is written for,
+          # and base64 removes any escaping issue along the way. The exports go
+          # first, in the parent shell, and bash inherits them.
           jq -n \
             --arg image "$APP_IMAGE" \
             --arg sha "$GITHUB_SHA" \
@@ -163,7 +171,8 @@ jobs:
                commands: [
                  ("export APP_IMAGE=" + ($image | @sh)),
                  ("export GIT_SHA=" + ($sha | @sh)),
-                 $script
+                 ("printf %s " + ($script | @base64 | @sh) + " | base64 -d > /tmp/deploy.sh"),
+                 "bash /tmp/deploy.sh"
                ]
              }' > /tmp/ssm-params.json
 

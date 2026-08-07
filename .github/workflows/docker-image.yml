@@ -147,6 +147,6 @@ jobs:
           script: |
             cd ~/entertainment-catalog
             git pull origin main
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yaml pull
+            docker compose -f docker-compose.prod.yaml up -d
             docker image prune -f

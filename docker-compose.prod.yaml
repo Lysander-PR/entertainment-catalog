@@ -69,11 +69,11 @@ services:
   certbot:
     container_name: certbot
     image: certbot/certbot
-    profiles: ['tools']
+    profiles:
+      - tools
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-webroot:/var/www/certbot
-    entrypoint: 'true'
 
 volumes:
   pgdata:

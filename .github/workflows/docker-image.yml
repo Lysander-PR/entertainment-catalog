@@ -77,6 +77,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -131,15 +134,39 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Copy infrastructure files to EC2
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          source: 'docker-compose.prod.yaml,nginx.conf'
+          target: '~/entertainment-catalog'
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          APP_IMAGE: ${{ secrets.DOCKER_USER }}/entertainments:${{ needs.build.outputs.version }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: APP_IMAGE
           script: |
+            set -euo pipefail
             cd ~/entertainment-catalog
-            git pull origin main
+            export APP_IMAGE
+
+            echo "Desplegando $APP_IMAGE"
             docker compose -f docker-compose.prod.yaml pull
+
+            docker compose -f docker-compose.prod.yaml up -d --wait postgres redis
+
+            docker compose -f docker-compose.prod.yaml run --rm --no-deps app1 \
+              node node_modules/typeorm/cli.js migration:run -d dist/config/typeorm.config.js
+
             docker compose -f docker-compose.prod.yaml up -d
             docker image prune -f

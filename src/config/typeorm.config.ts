@@ -1,6 +1,8 @@
 import { DataSource } from 'typeorm';
 import { envs } from './envs';
 
+const configDir = __dirname.replace(/\\/g, '/');
+
 export const AppDataSource = new DataSource({
   type: 'postgres',
   host: envs.DB_HOST,
@@ -9,8 +11,8 @@ export const AppDataSource = new DataSource({
   password: envs.DB_PASSWORD,
   database: envs.DB_NAME,
   synchronize: false,
-  entities: ['**/*.entity.ts'],
-  migrations: ['src/database/migrations/*-migration.ts'],
+  entities: [`${configDir}/../**/*.entity.{ts,js}`],
+  migrations: [`${configDir}/../database/migrations/*-migration.{ts,js}`],
   migrationsRun: false,
   logging: true,
   ssl: false,

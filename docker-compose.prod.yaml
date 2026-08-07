@@ -11,33 +11,45 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
   redis:
     container_name: redis-server
     image: redis:7-alpine
     restart: unless-stopped
   app1:
     container_name: app1
-    image: lysanderpr/entertainments:latest
+    image: ${APP_IMAGE:-lysanderpr/entertainments:latest}
     restart: unless-stopped
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     env_file: .env
   app2:
     container_name: app2
-    image: lysanderpr/entertainments:latest
+    image: ${APP_IMAGE:-lysanderpr/entertainments:latest}
     restart: unless-stopped
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     env_file: .env
   app3:
     container_name: app3
-    image: lysanderpr/entertainments:latest
+    image: ${APP_IMAGE:-lysanderpr/entertainments:latest}
     restart: unless-stopped
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     env_file: .env
   nginx:
     container_name: nginx-server

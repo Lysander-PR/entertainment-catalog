@@ -11,6 +11,10 @@ A RESTful API for managing an entertainment catalog (movies, books, albums, and 
 
 It ships with JWT authentication and role-based authorization, Redis caching with targeted invalidation, cover image storage on Supabase, soft deletes, database migrations, and a CI/CD pipeline that tests against real Postgres and Redis instances before publishing a multi-architecture Docker image.
 
+## 🏗 Architecture
+
+![Architecture diagram](./docs/diagrams/architecture-diagram.svg)
+
 ## 📋 Table of Contents
 
 - [Features](#-features)
@@ -160,15 +164,15 @@ module/
 
 ## 🗃 Data Model
 
-| Entity     | Table     | Key fields                                                                        | Relations                                   |
-| ---------- | --------- | --------------------------------------------------------------------------------- | ------------------------------------------- |
-| **User**   | `user`    | `email`, `username` (unique), `password`, `rol`, `verified`, `active`              | —                                           |
-| **Movie**  | `movies`  | `title`, `director`, `writer`, `studio`, `protagonist`, `releaseDate`, `soundtrack` | One-to-one → `Cover` (`poster_id`)          |
-| **Book**   | `books`   | `title`, `author`, `coWriter`, `publisher`, `releaseDate`, `createdAt`             | One-to-one → `Cover` (`cover_id`)           |
-| **Album**  | `albums`  | `album` (unique), `artist`, `studio`, `releaseDate`                                | One-to-many → `Song`, one-to-one → `Cover`  |
-| **Song**   | `songs`   | `title`, `composer`, `guestArtist`                                                 | Many-to-one → `Album`, many-to-one → `Genre` |
-| **Genre**  | `genres`  | `genre` (unique)                                                                   | One-to-many → `Song`                        |
-| **Cover**  | `covers`  | `file` (storage path)                                                              | Inverse side of movie, book, and album       |
+| Entity    | Table    | Key fields                                                                          | Relations                                    |
+| --------- | -------- | ----------------------------------------------------------------------------------- | -------------------------------------------- |
+| **User**  | `user`   | `email`, `username` (unique), `password`, `rol`, `verified`, `active`               | —                                            |
+| **Movie** | `movies` | `title`, `director`, `writer`, `studio`, `protagonist`, `releaseDate`, `soundtrack` | One-to-one → `Cover` (`poster_id`)           |
+| **Book**  | `books`  | `title`, `author`, `coWriter`, `publisher`, `releaseDate`, `createdAt`              | One-to-one → `Cover` (`cover_id`)            |
+| **Album** | `albums` | `album` (unique), `artist`, `studio`, `releaseDate`                                 | One-to-many → `Song`, one-to-one → `Cover`   |
+| **Song**  | `songs`  | `title`, `composer`, `guestArtist`                                                  | Many-to-one → `Album`, many-to-one → `Genre` |
+| **Genre** | `genres` | `genre` (unique)                                                                    | One-to-many → `Song`                         |
+| **Cover** | `covers` | `file` (storage path)                                                               | Inverse side of movie, book, and album       |
 
 All catalog entities carry an `active` flag used for soft deletes. Cover relations are `eager` and use `cascade`, so a record's cover metadata travels with it.
 
@@ -182,7 +186,9 @@ Authorization is declarative and closed by default: a controller decorated with 
 export class MoviesController {
   @Get()
   @Public() // ...except this one
-  findAll(@Query() paginationDto: PaginationDto) { /* ... */ }
+  findAll(@Query() paginationDto: PaginationDto) {
+    /* ... */
+  }
 }
 ```
 
@@ -191,7 +197,9 @@ Passing roles restricts access further. `@Auth(Roles.ADMIN)` rejects authenticat
 ```ts
 @Controller('files')
 @Auth(Roles.ADMIN)
-export class FilesController { /* ... */ }
+export class FilesController {
+  /* ... */
+}
 ```
 
 ### Getting a Token
@@ -297,20 +305,20 @@ REDIS_URL=redis://localhost:6379
 JWT_SECRET=your_long_random_secret
 ```
 
-| Variable          | Type              | Description                                                                 |
-| ----------------- | ----------------- | --------------------------------------------------------------------------- |
-| `PORT`            | number            | Port the API listens on                                                     |
-| `NODE_ENV`        | string            | Set to `prod` to enable SSL, disable `synchronize`, and skip `.env` loading  |
-| `DB_HOST`         | string            | PostgreSQL host                                                             |
-| `DB_PORT`         | number            | PostgreSQL port                                                             |
-| `DB_USER`         | string            | PostgreSQL user                                                             |
-| `DB_PASSWORD`     | string            | PostgreSQL password                                                         |
-| `DB_NAME`         | string            | Database name                                                               |
-| `SUPABASE_URL`    | url               | Supabase project URL                                                        |
-| `SUPABASE_KEY`    | string            | Supabase API key                                                            |
-| `SUPABASE_BUCKET` | string            | Bucket where covers are stored                                              |
-| `REDIS_URL`       | url               | Redis connection string                                                     |
-| `JWT_SECRET`      | string            | Secret used to sign access tokens                                           |
+| Variable          | Type   | Description                                                                 |
+| ----------------- | ------ | --------------------------------------------------------------------------- |
+| `PORT`            | number | Port the API listens on                                                     |
+| `NODE_ENV`        | string | Set to `prod` to enable SSL, disable `synchronize`, and skip `.env` loading |
+| `DB_HOST`         | string | PostgreSQL host                                                             |
+| `DB_PORT`         | number | PostgreSQL port                                                             |
+| `DB_USER`         | string | PostgreSQL user                                                             |
+| `DB_PASSWORD`     | string | PostgreSQL password                                                         |
+| `DB_NAME`         | string | Database name                                                               |
+| `SUPABASE_URL`    | url    | Supabase project URL                                                        |
+| `SUPABASE_KEY`    | string | Supabase API key                                                            |
+| `SUPABASE_BUCKET` | string | Bucket where covers are stored                                              |
+| `REDIS_URL`       | url    | Redis connection string                                                     |
+| `JWT_SECRET`      | string | Secret used to sign access tokens                                           |
 
 > **Note on `NODE_ENV`**: the value checked for production behaviour is exactly `prod`. Any other value is treated as a non-production environment.
 
@@ -352,89 +360,89 @@ All endpoints are prefixed with `/api`. Access levels: **Public** needs no token
 
 ### Authentication — `/api/auth`
 
-| Method | Endpoint    | Description                     | Access |
-| ------ | ----------- | ------------------------------- | ------ |
-| `POST` | `/login`    | Log in with email and password  | Public |
-| `POST` | `/register` | Register a new user and log in  | Public |
+| Method | Endpoint    | Description                    | Access |
+| ------ | ----------- | ------------------------------ | ------ |
+| `POST` | `/login`    | Log in with email and password | Public |
+| `POST` | `/register` | Register a new user and log in | Public |
 
 ### Movies — `/api/movies`
 
-| Method   | Endpoint       | Description                            | Access |
-| -------- | -------------- | -------------------------------------- | ------ |
-| `GET`    | `/`            | List active movies (paginated)         | Public |
-| `GET`    | `/:id`         | Get one active movie                   | Public |
-| `POST`   | `/`            | Create a movie, with optional cover    | Auth   |
-| `PATCH`  | `/:id`         | Update a movie, with optional cover    | Auth   |
-| `DELETE` | `/:id`         | Soft delete a movie                    | Auth   |
-| `POST`   | `/reactivate`  | Reactivate a soft-deleted movie        | Auth   |
+| Method   | Endpoint      | Description                         | Access |
+| -------- | ------------- | ----------------------------------- | ------ |
+| `GET`    | `/`           | List active movies (paginated)      | Public |
+| `GET`    | `/:id`        | Get one active movie                | Public |
+| `POST`   | `/`           | Create a movie, with optional cover | Auth   |
+| `PATCH`  | `/:id`        | Update a movie, with optional cover | Auth   |
+| `DELETE` | `/:id`        | Soft delete a movie                 | Auth   |
+| `POST`   | `/reactivate` | Reactivate a soft-deleted movie     | Auth   |
 
 ### Books — `/api/books`
 
-| Method   | Endpoint       | Description                          | Access |
-| -------- | -------------- | ------------------------------------ | ------ |
-| `GET`    | `/`            | List active books (paginated)        | Public |
-| `GET`    | `/:id`         | Get one active book                  | Public |
-| `POST`   | `/`            | Create a book, with optional cover   | Auth   |
-| `PATCH`  | `/:id`         | Update a book, with optional cover   | Auth   |
-| `DELETE` | `/:id`         | Soft delete a book                   | Auth   |
-| `POST`   | `/reactivate`  | Reactivate a soft-deleted book       | Auth   |
+| Method   | Endpoint      | Description                        | Access |
+| -------- | ------------- | ---------------------------------- | ------ |
+| `GET`    | `/`           | List active books (paginated)      | Public |
+| `GET`    | `/:id`        | Get one active book                | Public |
+| `POST`   | `/`           | Create a book, with optional cover | Auth   |
+| `PATCH`  | `/:id`        | Update a book, with optional cover | Auth   |
+| `DELETE` | `/:id`        | Soft delete a book                 | Auth   |
+| `POST`   | `/reactivate` | Reactivate a soft-deleted book     | Auth   |
 
 ### Albums — `/api/albums`
 
-| Method   | Endpoint       | Description                                | Access |
-| -------- | -------------- | ------------------------------------------ | ------ |
-| `GET`    | `/`            | List active albums (paginated)             | Public |
-| `GET`    | `/:id`         | Get one active album                       | Public |
-| `POST`   | `/`            | Create an album with its songs and cover   | Auth   |
-| `PATCH`  | `/:id`         | Update an album, with optional cover       | Auth   |
-| `DELETE` | `/:id`         | Soft delete an album                       | Auth   |
-| `POST`   | `/reactivate`  | Reactivate a soft-deleted album            | Auth   |
+| Method   | Endpoint      | Description                              | Access |
+| -------- | ------------- | ---------------------------------------- | ------ |
+| `GET`    | `/`           | List active albums (paginated)           | Public |
+| `GET`    | `/:id`        | Get one active album                     | Public |
+| `POST`   | `/`           | Create an album with its songs and cover | Auth   |
+| `PATCH`  | `/:id`        | Update an album, with optional cover     | Auth   |
+| `DELETE` | `/:id`        | Soft delete an album                     | Auth   |
+| `POST`   | `/reactivate` | Reactivate a soft-deleted album          | Auth   |
 
 ### Songs — `/api/songs`
 
-| Method   | Endpoint       | Description                      | Access |
-| -------- | -------------- | -------------------------------- | ------ |
-| `GET`    | `/`            | List active songs (paginated)    | Public |
-| `GET`    | `/:id`         | Get one active song              | Public |
-| `POST`   | `/`            | Create a song                    | Auth   |
-| `PATCH`  | `/:id`         | Update a song                    | Auth   |
-| `DELETE` | `/:id`         | Soft delete a song               | Auth   |
-| `POST`   | `/reactivate`  | Reactivate a soft-deleted song   | Auth   |
+| Method   | Endpoint      | Description                    | Access |
+| -------- | ------------- | ------------------------------ | ------ |
+| `GET`    | `/`           | List active songs (paginated)  | Public |
+| `GET`    | `/:id`        | Get one active song            | Public |
+| `POST`   | `/`           | Create a song                  | Auth   |
+| `PATCH`  | `/:id`        | Update a song                  | Auth   |
+| `DELETE` | `/:id`        | Soft delete a song             | Auth   |
+| `POST`   | `/reactivate` | Reactivate a soft-deleted song | Auth   |
 
 ### Genres — `/api/genres`
 
-| Method   | Endpoint | Description                     | Access |
-| -------- | -------- | ------------------------------- | ------ |
-| `GET`    | `/`      | List genres (paginated)         | Public |
-| `GET`    | `/:id`   | Get one genre                   | Public |
-| `POST`   | `/`      | Create a genre                  | Auth   |
-| `PATCH`  | `/:id`   | Update a genre                  | Auth   |
-| `DELETE` | `/:id`   | Delete a genre                  | Auth   |
+| Method   | Endpoint | Description             | Access |
+| -------- | -------- | ----------------------- | ------ |
+| `GET`    | `/`      | List genres (paginated) | Public |
+| `GET`    | `/:id`   | Get one genre           | Public |
+| `POST`   | `/`      | Create a genre          | Auth   |
+| `PATCH`  | `/:id`   | Update a genre          | Auth   |
+| `DELETE` | `/:id`   | Delete a genre          | Auth   |
 
 ### Users — `/api/user`
 
-| Method   | Endpoint       | Description                     | Access |
-| -------- | -------------- | ------------------------------- | ------ |
-| `POST`   | `/`            | Create a user                   | Public |
-| `GET`    | `/:id`         | Get a user by id                | Auth   |
-| `PATCH`  | `/:id`         | Update a user                   | Auth   |
-| `DELETE` | `/:id`         | Soft delete a user              | Auth   |
-| `POST`   | `/reactivate`  | Reactivate a soft-deleted user  | Auth   |
+| Method   | Endpoint      | Description                    | Access |
+| -------- | ------------- | ------------------------------ | ------ |
+| `POST`   | `/`           | Create a user                  | Public |
+| `GET`    | `/:id`        | Get a user by id               | Auth   |
+| `PATCH`  | `/:id`        | Update a user                  | Auth   |
+| `DELETE` | `/:id`        | Soft delete a user             | Auth   |
+| `POST`   | `/reactivate` | Reactivate a soft-deleted user | Auth   |
 
 ### Files — `/api/files`
 
-| Method   | Endpoint  | Description                    | Access |
-| -------- | --------- | ------------------------------ | ------ |
-| `GET`    | `/:id`    | Get file content by id         | Public |
-| `POST`   | `/upload` | Upload a cover image           | Admin  |
-| `PATCH`  | `/:id`    | Replace an existing cover      | Admin  |
-| `DELETE` | `/:id`    | Delete a cover                 | Admin  |
+| Method   | Endpoint  | Description               | Access |
+| -------- | --------- | ------------------------- | ------ |
+| `GET`    | `/:id`    | Get file content by id    | Public |
+| `POST`   | `/upload` | Upload a cover image      | Admin  |
+| `PATCH`  | `/:id`    | Replace an existing cover | Admin  |
+| `DELETE` | `/:id`    | Delete a cover            | Admin  |
 
 ### Seed — `/api/seed`
 
-| Method | Endpoint | Description                          | Access |
-| ------ | -------- | ------------------------------------ | ------ |
-| `POST` | `/`      | Populate the database with samples   | Admin  |
+| Method | Endpoint | Description                        | Access |
+| ------ | -------- | ---------------------------------- | ------ |
+| `POST` | `/`      | Populate the database with samples | Admin  |
 
 ### Pagination Parameters
 
@@ -491,7 +499,7 @@ curl -X POST http://localhost:3000/api/movies \
 
 | Status | When it happens                                                                 |
 | ------ | ------------------------------------------------------------------------------- |
-| `400`  | Invalid payload, unknown properties, malformed UUID, empty update, invalid file  |
+| `400`  | Invalid payload, unknown properties, malformed UUID, empty update, invalid file |
 | `401`  | Missing, expired, or invalid token                                              |
 | `403`  | Valid token without the required role                                           |
 | `404`  | Resource not found or inactive                                                  |
@@ -623,12 +631,12 @@ pnpm run test:debug  # Tests with the debugger attached
 
 The test suite covers services, controllers, modules, entities, DTOs, guards, decorators, filters, pipes, and helpers.
 
-| Metric               | Value             |
-| -------------------- | ----------------- |
-| Unit test files      | 71                |
-| E2E test suites      | 8                 |
-| Statement coverage   | 93.5%             |
-| Branch coverage      | 81.7%             |
+| Metric             | Value |
+| ------------------ | ----- |
+| Unit test files    | 71    |
+| E2E test suites    | 8     |
+| Statement coverage | 93.5% |
+| Branch coverage    | 81.7% |
 
 E2E specs live in `test/` and exercise each module end to end — authentication flows, CRUD lifecycles, validation failures, and authorization rules — against a running PostgreSQL and Redis.
 

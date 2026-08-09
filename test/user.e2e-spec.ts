@@ -32,19 +32,29 @@ const expectUserShape = (body: Record<string, unknown>) => {
   expect(body).not.toHaveProperty('active');
 };
 
+const adminEmail = 'user.testing.admin@google.com';
+
 describe('User (e2e)', () => {
   let app: INestApplication<App>;
   let moduleFixture: TestingModule;
   let dataSource: DataSource;
   let authUser: { id: string; email: string; username: string };
   let authHeader: string;
+  let adminUser: { id: string; email: string; username: string };
+  let adminAuthHeader: string;
 
   beforeAll(async () => {
     ({ app, moduleFixture } = await createTestApp());
     dataSource = moduleFixture.get(DataSource);
 
     await dataSource.getRepository(User).delete({
-      email: In([testingEmail, createdEmail, otherEmail, tempEmail]),
+      email: In([
+        testingEmail,
+        createdEmail,
+        otherEmail,
+        tempEmail,
+        adminEmail,
+      ]),
     });
 
     const registerPayload: CreateUserDto = {
@@ -60,11 +70,34 @@ describe('User (e2e)', () => {
 
     authUser = response.body.user;
     authHeader = `Bearer ${response.body.access_token}`;
+
+    const adminPayload: CreateUserDto = {
+      email: adminEmail,
+      username: 'user-testing-admin',
+      password: 'Str0ng!Pass1',
+    };
+
+    const adminResponse = await request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send(adminPayload)
+      .expect(201);
+
+    await dataSource
+      .getRepository(User)
+      .update({ id: adminResponse.body.user.id }, { rol: Roles.ADMIN });
+    adminUser = adminResponse.body.user;
+    adminAuthHeader = `Bearer ${adminResponse.body.access_token}`;
   });
 
   afterAll(async () => {
     await dataSource.getRepository(User).delete({
-      email: In([testingEmail, createdEmail, otherEmail, tempEmail]),
+      email: In([
+        testingEmail,
+        createdEmail,
+        otherEmail,
+        tempEmail,
+        adminEmail,
+      ]),
     });
     await app.close();
   });
@@ -292,7 +325,7 @@ describe('User (e2e)', () => {
     it('rejects an invalid uuid', async () => {
       const response = await request(app.getHttpServer())
         .get('/api/user/not-a-uuid')
-        .set('Authorization', authHeader)
+        .set('Authorization', adminAuthHeader)
         .expect(400);
 
       expect(typeof response.body.message).toBe('string');
@@ -306,7 +339,7 @@ describe('User (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .get(`/api/user/${unknownId}`)
-        .set('Authorization', authHeader)
+        .set('Authorization', adminAuthHeader)
         .expect(404);
 
       expect(typeof response.body.message).toBe('string');
@@ -322,6 +355,28 @@ describe('User (e2e)', () => {
       expectUserShape(response.body);
       expect(response.body.id).toBe(authUser.id);
       expect(response.body.email).toBe(authUser.email);
+    });
+
+    it('rejects fetching another user when not the owner or an admin', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/api/user/${adminUser.id}`)
+        .set('Authorization', authHeader)
+        .expect(403);
+
+      expect(typeof response.body.message).toBe('string');
+      expect(response.body.message).toBe(
+        'You do not have permission to access this user',
+      );
+    });
+
+    it('allows an admin to fetch another user', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/api/user/${authUser.id}`)
+        .set('Authorization', adminAuthHeader)
+        .expect(200);
+
+      expectUserShape(response.body);
+      expect(response.body.id).toBe(authUser.id);
     });
   });
 
@@ -389,6 +444,36 @@ describe('User (e2e)', () => {
       expect(response.body.username).toBe(payload.username);
       authUser.username = payload.username!;
     });
+
+    it('rejects updating another user when not the owner or an admin', async () => {
+      const payload: UpdateUserDto = { username: 'user-testing-hijacked' };
+
+      const response = await request(app.getHttpServer())
+        .patch(`/api/user/${adminUser.id}`)
+        .set('Authorization', authHeader)
+        .send(payload)
+        .expect(403);
+
+      expect(typeof response.body.message).toBe('string');
+      expect(response.body.message).toBe(
+        'You do not have permission to access this user',
+      );
+    });
+
+    it('allows an admin to update another user', async () => {
+      const payload: UpdateUserDto = { username: 'user-testing-renamed-2' };
+
+      const response = await request(app.getHttpServer())
+        .patch(`/api/user/${authUser.id}`)
+        .set('Authorization', adminAuthHeader)
+        .send(payload)
+        .expect(200);
+
+      expectUserShape(response.body);
+      expect(response.body.id).toBe(authUser.id);
+      expect(response.body.username).toBe(payload.username);
+      authUser.username = payload.username!;
+    });
   });
 
   describe('PATCH /api/user/:id (DTO validation)', () => {
@@ -439,7 +524,7 @@ describe('User (e2e)', () => {
   });
 
   describe('DELETE /api/user/:id', () => {
-    it('deletes, then reactivates a temporary user', async () => {
+    it('lets a user delete their own account, and an admin reactivate it', async () => {
       const tempUser: CreateUserDto = {
         email: tempEmail,
         username: 'user-testing-temp',
@@ -451,10 +536,11 @@ describe('User (e2e)', () => {
         .send(tempUser)
         .expect(201);
       const tempId = tempResponse.body.user.id;
+      const tempAuthHeader = `Bearer ${tempResponse.body.access_token}`;
 
       const deleted = await request(app.getHttpServer())
         .delete(`/api/user/${tempId}`)
-        .set('Authorization', authHeader)
+        .set('Authorization', tempAuthHeader)
         .expect(200);
 
       expectUserShape(deleted.body);
@@ -462,7 +548,7 @@ describe('User (e2e)', () => {
 
       const notFound = await request(app.getHttpServer())
         .get(`/api/user/${tempId}`)
-        .set('Authorization', authHeader)
+        .set('Authorization', adminAuthHeader)
         .expect(404);
 
       expect(typeof notFound.body.message).toBe('string');
@@ -470,7 +556,7 @@ describe('User (e2e)', () => {
 
       const reactivated = await request(app.getHttpServer())
         .post('/api/user/reactivate')
-        .set('Authorization', authHeader)
+        .set('Authorization', adminAuthHeader)
         .send({ id: tempId })
         .expect(201);
 
@@ -479,11 +565,34 @@ describe('User (e2e)', () => {
 
       const restored = await request(app.getHttpServer())
         .get(`/api/user/${tempId}`)
-        .set('Authorization', authHeader)
+        .set('Authorization', adminAuthHeader)
         .expect(200);
 
       expectUserShape(restored.body);
       expect(restored.body.id).toBe(tempId);
+    });
+
+    it('rejects deleting or reactivating another user when not the owner or an admin', async () => {
+      const deleteResponse = await request(app.getHttpServer())
+        .delete(`/api/user/${adminUser.id}`)
+        .set('Authorization', authHeader)
+        .expect(403);
+
+      expect(typeof deleteResponse.body.message).toBe('string');
+      expect(deleteResponse.body.message).toBe(
+        'You do not have permission to access this user',
+      );
+
+      const reactivateResponse = await request(app.getHttpServer())
+        .post('/api/user/reactivate')
+        .set('Authorization', authHeader)
+        .send({ id: adminUser.id })
+        .expect(403);
+
+      expect(typeof reactivateResponse.body.message).toBe('string');
+      expect(reactivateResponse.body.message).toBe(
+        'You do not have permission to access this user',
+      );
     });
   });
 });

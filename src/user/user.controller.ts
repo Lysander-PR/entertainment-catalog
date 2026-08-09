@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   SerializeOptions,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -34,6 +35,7 @@ import { USER_PATH } from './types/consts/user.const';
 import { Auth } from '@/auth/decorator/auth.decorator';
 import { Roles } from './types/enums/roles.enum';
 import { Public } from '@/auth/decorator/public.decorator';
+import { OwnershipGuard } from '@/auth/guards/ownership.guard';
 
 @ApiTags('User')
 @Controller(USER_PATH)
@@ -57,6 +59,7 @@ export class UserController {
   }
 
   @Get(':id')
+  @UseGuards(OwnershipGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get one active user by id',
@@ -76,6 +79,7 @@ export class UserController {
   }
 
   @Patch(':id')
+  @UseGuards(OwnershipGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Update an existing user',
@@ -103,6 +107,7 @@ export class UserController {
   }
 
   @Delete(':id')
+  @UseGuards(OwnershipGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Soft delete a user (set active=false)',
@@ -122,6 +127,7 @@ export class UserController {
   }
 
   @Post('reactivate')
+  @UseGuards(OwnershipGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Reactivate a previously soft-deleted user',

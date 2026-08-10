@@ -31,8 +31,8 @@ const expectSongShape = (body: Record<string, unknown>) => {
   );
   expect(isUUID(body.id as string)).toBe(true);
   expect(body).not.toHaveProperty('active');
-  expect(body).not.toHaveProperty('albumId');
-  expect(body).not.toHaveProperty('genreId');
+  expect(body).toHaveProperty('albumId');
+  expect(body).toHaveProperty('genreId');
 };
 
 describe('Songs (e2e)', () => {

@@ -59,11 +59,13 @@ export class Song {
   active: boolean;
 
   @Column('uuid', { name: 'album_id', nullable: false })
+  @Expose()
   @ApiHideProperty()
   albumId: string;
 
   @Column('uuid', { name: 'genre_id', nullable: false })
   @ApiHideProperty()
+  @Expose()
   genreId: string;
 
   @ManyToOne(() => Album, (album) => album.songs)

@@ -3,7 +3,7 @@
 ![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-8.6-DC382D?logo=redis&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-multi--arch-2496ED?logo=docker&logoColor=white)
 ![Coverage](https://img.shields.io/badge/coverage-92%25%20statements-brightgreen)
 
@@ -273,7 +273,7 @@ curl -X POST http://localhost:3000/api/auth/refresh \
 
 - **Node.js 22.16.0** (see `.node-version`)
 - **pnpm 10.28.2** or later
-- **PostgreSQL 16** and **Redis 8** — or Docker and Docker Compose to run both
+- **PostgreSQL 16** and **Redis 7** — or Docker and Docker Compose to run both
 - **Supabase account** with a storage bucket, for cover images
 
 ## 🚀 Installation

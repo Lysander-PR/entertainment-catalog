@@ -2,18 +2,14 @@
 
 ![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.2-4169E1?logo=postgresql&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-8.6-DC382D?logo=redis&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-multi--arch-2496ED?logo=docker&logoColor=white)
-![Coverage](https://img.shields.io/badge/coverage-93%25%20statements-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-92%25%20statements-brightgreen)
 
 A RESTful API for managing an entertainment catalog (movies, books, albums, and songs), built with NestJS and designed to serve multimedia content to presentation applications.
 
-It ships with JWT authentication and role-based authorization, Redis caching with targeted invalidation, cover image storage on Supabase, soft deletes, database migrations, and a CI/CD pipeline that tests against real Postgres and Redis instances before publishing a multi-architecture Docker image.
-
-## 🏗 Architecture
-
-![Architecture diagram](./docs/diagrams/architecture-diagram.svg)
+It ships with JWT authentication, role-based authorization and per-resource ownership checks, Redis caching with namespaced invalidation, cover image storage on Supabase, soft deletes, database migrations, and a CI/CD pipeline that tests against real Postgres and Redis instances, publishes a multi-architecture Docker image, and deploys it to an EC2 instance behind nginx.
 
 ## 📋 Table of Contents
 
@@ -29,6 +25,7 @@ It ships with JWT authentication and role-based authorization, Redis caching wit
 - [API Endpoints](#-api-endpoints)
 - [Documentation](#-documentation)
 - [Docker](#-docker)
+- [Deployment](#-deployment)
 - [CI/CD](#-cicd)
 - [Available Scripts](#-available-scripts)
 - [Testing](#-testing)
@@ -41,11 +38,12 @@ It ships with JWT authentication and role-based authorization, Redis caching wit
 ### Main Functionalities
 
 - **Complete CRUD**: Create, read, update, and delete operations for movies, books, albums, songs, and genres
-- **JWT Authentication**: Registration and login with `bcrypt` password hashing, issued tokens validated through a Passport JWT strategy
+- **JWT Authentication**: Registration and login with `bcrypt` password hashing, short-lived tokens validated through a Passport JWT strategy and renewed through a dedicated endpoint
 - **Role-Based Authorization**: `admin` and `user` roles enforced by a guard, applied through a single `@Auth(...roles)` decorator
+- **Ownership Checks**: `OwnershipGuard` restricts every user route to the authenticated user's own record, so an id in the URL cannot be swapped for someone else's
 - **Soft Delete and Reactivation**: Records are deactivated (`active = false`) instead of being physically removed, and can be restored through a dedicated endpoint
 - **File Management**: Cover image upload, retrieval, replacement, and deletion backed by Supabase Storage
-- **Cache System**: Redis-backed caching with per-module namespaces and targeted invalidation on every write
+- **Cache System**: Redis-backed caching with per-module namespaces, invalidated by prefix on every write
 - **Pagination**: Page-based pagination on all listing endpoints
 - **Multi-Layer Validation**: Environment variables validated with `zod` at boot time, request payloads with `class-validator`, and uploaded files with a custom pipe
 - **Interactive Documentation**: Fully annotated Swagger/OpenAPI specification
@@ -57,7 +55,7 @@ It ships with JWT authentication and role-based authorization, Redis caching wit
 
 - **Transactional Consistency Between Database and Storage**: Writes that involve a file run inside a `SERIALIZABLE` transaction wrapped by `CommonService.handleTransactionWithFile`, which deletes the already-uploaded object from the bucket if the transaction fails — preventing orphaned files
 - **Storage Provider Abstraction**: Domain services depend on the `IStorageService` interface injected through the `STORAGE_SERVICE` token, never on Supabase directly, so the provider can be swapped without touching business logic
-- **Namespaced Cache Keys**: The `CacheKey` / `EntertainmentStorage` abstract classes give each module its own cache namespace and storage folder, derived from a single path constant
+- **Namespaced Cache Keys**: The `CacheKey` / `EntertainmentStorage` abstract classes give each module its own cache namespace and storage folder, derived from a single path constant. `CacheService.deleteByPrefix` then evicts that namespace with `SCAN` + `UNLINK` in batches, so a write to one module never flushes the others
 - **Duplicate Detection**: Domain-level uniqueness checks (for example, title + director + studio for movies) that raise a `409 Conflict` instead of relying on database errors
 - **Input Sanitization**: Custom `@CleanInput()` decorator that normalizes and cleans incoming strings before validation
 - **Error Handling**: Exception filters that translate TypeORM (`QueryFailedError`, `UpdateValuesMissingError`) and Supabase Storage errors into meaningful HTTP responses
@@ -76,16 +74,16 @@ It ships with JWT authentication and role-based authorization, Redis caching wit
 
 ### Data
 
-- **Database**: PostgreSQL 16.2
+- **Database**: 16
 - **ORM**: [TypeORM 0.3](https://typeorm.io/) with migrations
-- **Cache**: Redis 8.6 via `@nestjs/cache-manager` and `@keyv/redis` (3-minute default TTL)
+- **Cache**: Redis via `@nestjs/cache-manager` and `@keyv/redis` (3-minute default TTL)
 - **File Storage**: [Supabase Storage](https://supabase.com/storage)
 
 ### Security
 
 - **Authentication**: `@nestjs/jwt` with Passport (`passport-jwt`, `passport-local`)
 - **Password Hashing**: `bcrypt`
-- **Authorization**: Custom role guard driven by route metadata
+- **Authorization**: Custom role guard driven by route metadata, plus an ownership guard for user-scoped routes
 
 ### Validation and Serialization
 
@@ -105,10 +103,14 @@ It ships with JWT authentication and role-based authorization, Redis caching wit
 ### DevOps
 
 - **Containerization**: Docker (multi-stage) and Docker Compose
-- **CI/CD**: GitHub Actions with automatic semantic versioning and multi-arch image publishing
+- **Reverse Proxy**: nginx as load balancer and TLS terminator, with certificates issued by Certbot / Let's Encrypt
+- **Hosting**: AWS EC2, with deployments driven by SSM (no inbound SSH)
+- **CI/CD**: GitHub Actions with automatic semantic versioning, multi-arch image publishing, and automated deployment
 - **Package Manager**: [pnpm](https://pnpm.io/) 10.28.2
 
 ## 🏗 Architecture
+
+![Architecture diagram](./docs/diagrams/architecture-diagram.svg)
 
 The project follows a modular architecture, with each domain isolated in its own NestJS module and cross-cutting concerns extracted into a shared module.
 
@@ -116,8 +118,8 @@ The project follows a modular architecture, with each domain isolated in its own
 src/
 ├── albums/           # Albums module
 ├── auth/             # Authentication and authorization
-│   ├── decorator/    # @Auth() and @Public() decorators
-│   ├── guards/       # JWT + roles guard
+│   ├── decorator/    # @Auth(), @Public() and @GetUser() decorators
+│   ├── guards/       # JWT + roles guard, ownership guard
 │   └── strategies/   # Passport JWT strategy
 ├── books/            # Books module
 ├── movies/           # Movies module
@@ -129,10 +131,11 @@ src/
 │   └── pipes/        # File validation pipe
 ├── common/           # Shared building blocks
 │   ├── abstracts/    # CacheKey, EntertainmentStorage
-│   ├── decorators/   # @CleanInput()
-│   ├── dto/          # PaginationDto
+│   ├── cache/        # CacheService, prefix-based invalidation
+│   ├── decorators/   # @CleanInput(), @ApiPaginatedResponse()
+│   ├── dto/          # PaginationDto, PaginationResponseDto
 │   ├── filters/      # TypeORM exception filters
-│   ├── helpers/      # Hashing, capitalization, storage paths
+│   ├── helpers/      # Hashing, capitalization, storage paths, pagination, uuid
 │   ├── interfaces/   # IStorageService contract
 │   ├── middleware/   # HTTP logger
 │   └── utils/        # Validation messages, regular expressions
@@ -140,6 +143,18 @@ src/
 ├── database/
 │   └── migrations/   # TypeORM migrations
 └── seed/             # Sample data and loading helpers
+```
+
+Infrastructure lives at the repository root, next to the application:
+
+```
+├── Dockerfile                 # Multi-stage build of the application image
+├── docker-compose.yaml        # Postgres + Redis for local development
+├── docker-compose.prod.yaml   # Full production stack
+├── nginx.conf                 # Virtual host: upstream, TLS, /api proxy
+├── nginx-main.conf            # nginx main configuration
+├── scripts/deploy.sh          # Deployment executed on the instance through SSM
+└── docs/diagrams/             # Architecture diagram
 ```
 
 Each domain module follows the same pattern:
@@ -158,7 +173,7 @@ module/
 
 **Storage is inverted, not imported.** `SupabaseService` implements `IStorageService` and is registered under the `STORAGE_SERVICE` token. `MoviesService`, `BooksService`, and the rest receive the interface, so replacing Supabase with S3 means writing one new provider and changing one module registration.
 
-**Cache namespaces come from the same constant as the route.** Every entertainment service extends `EntertainmentStorage`, which builds both the cache key (`/api/movies`) and the storage folder from the module's path constant. Writes evict the collection key and the affected item key, rather than flushing the whole cache.
+**Cache namespaces come from the same constant as the route.** Every entertainment service extends `EntertainmentStorage`, which builds both the cache key (`/api/movies`) and the storage folder from the module's path constant. A write evicts only its own namespace — `CacheService` scans Redis for that prefix and unlinks the matching keys — so updating a movie never invalidates the cached albums.
 
 **File uploads are compensated, not assumed.** The upload happens before the transaction, and `handleTransactionWithFile` removes the object if the transaction rolls back. This keeps the bucket and the database from drifting apart.
 
@@ -172,9 +187,11 @@ module/
 | **Album** | `albums` | `album` (unique), `artist`, `studio`, `releaseDate`                                 | One-to-many → `Song`, one-to-one → `Cover`   |
 | **Song**  | `songs`  | `title`, `composer`, `guestArtist`                                                  | Many-to-one → `Album`, many-to-one → `Genre` |
 | **Genre** | `genres` | `genre` (unique)                                                                    | One-to-many → `Song`                         |
-| **Cover** | `covers` | `file` (storage path)                                                               | Inverse side of movie, book, and album       |
+| **Cover** | `covers` | `file` (public URL of the stored object)                                            | Inverse side of movie, book, and album       |
 
-All catalog entities carry an `active` flag used for soft deletes. Cover relations are `eager` and use `cascade`, so a record's cover metadata travels with it.
+Movies, books, albums, songs, and users carry an `active` flag used for soft deletes. `Genre` is the exception: it has no `active` column, so `DELETE /api/genres/:id` removes the row permanently and fails if songs still reference it.
+
+Cover relations are `eager` and use `cascade`, so a record's cover metadata travels with it.
 
 ## 🔐 Authentication and Authorization
 
@@ -202,6 +219,20 @@ export class FilesController {
 }
 ```
 
+### Ownership
+
+A valid role is not enough on user routes. `OwnershipGuard` compares the id in the request — route parameter or body — with the id of the authenticated user, and answers `403 Forbidden` when they differ:
+
+```ts
+@Get(':id')
+@UseGuards(OwnershipGuard)
+findOne(@Param('id', ParseUUIDPipe) id: string) {
+  /* ... */
+}
+```
+
+Users with the `admin` role bypass the check and can operate on any record. This is what keeps `GET /api/user/:id` from turning into an enumeration of everybody else's account.
+
 ### Getting a Token
 
 ```bash
@@ -224,6 +255,19 @@ curl -X DELETE http://localhost:3000/api/movies/<uuid> \
 ```
 
 > **Note**: New users are created with the `user` role. Admin-only routes (`/api/files`, `/api/seed`) require promoting a user to `admin` directly in the database.
+
+### Token Lifetime and Renewal
+
+Access tokens are deliberately short-lived: they expire **60 seconds** after being issued, and each one carries a unique `jti`. A leaked token is therefore useful for barely a minute.
+
+Clients keep the session alive by calling `POST /api/auth/refresh` with a token that is still valid; the endpoint returns a freshly signed one for the same user:
+
+```bash
+curl -X POST http://localhost:3000/api/auth/refresh \
+  -H "Authorization: Bearer <access_token>"
+```
+
+> **Note**: this is a renewal endpoint, not a refresh-token flow. There is no separate long-lived credential, so once a token expires the user has to log in again.
 
 ## 📋 Prerequisites
 
@@ -305,22 +349,22 @@ REDIS_URL=redis://localhost:6379
 JWT_SECRET=your_long_random_secret
 ```
 
-| Variable          | Type   | Description                                                                 |
-| ----------------- | ------ | --------------------------------------------------------------------------- |
-| `PORT`            | number | Port the API listens on                                                     |
-| `NODE_ENV`        | string | Set to `prod` to enable SSL, disable `synchronize`, and skip `.env` loading |
-| `DB_HOST`         | string | PostgreSQL host                                                             |
-| `DB_PORT`         | number | PostgreSQL port                                                             |
-| `DB_USER`         | string | PostgreSQL user                                                             |
-| `DB_PASSWORD`     | string | PostgreSQL password                                                         |
-| `DB_NAME`         | string | Database name                                                               |
-| `SUPABASE_URL`    | url    | Supabase project URL                                                        |
-| `SUPABASE_KEY`    | string | Supabase API key                                                            |
-| `SUPABASE_BUCKET` | string | Bucket where covers are stored                                              |
-| `REDIS_URL`       | url    | Redis connection string                                                     |
-| `JWT_SECRET`      | string | Secret used to sign access tokens                                           |
+| Variable          | Type   | Description                                                         |
+| ----------------- | ------ | ------------------------------------------------------------------- |
+| `PORT`            | number | Port the API listens on                                             |
+| `NODE_ENV`        | string | Set to `prod` to disable `synchronize` and skip `.env` file loading |
+| `DB_HOST`         | string | PostgreSQL host                                                     |
+| `DB_PORT`         | number | PostgreSQL port                                                     |
+| `DB_USER`         | string | PostgreSQL user                                                     |
+| `DB_PASSWORD`     | string | PostgreSQL password                                                 |
+| `DB_NAME`         | string | Database name                                                       |
+| `SUPABASE_URL`    | url    | Supabase project URL                                                |
+| `SUPABASE_KEY`    | string | Supabase API key                                                    |
+| `SUPABASE_BUCKET` | string | Bucket where covers are stored                                      |
+| `REDIS_URL`       | url    | Redis connection string                                             |
+| `JWT_SECRET`      | string | Secret used to sign access tokens                                   |
 
-> **Note on `NODE_ENV`**: the value checked for production behaviour is exactly `prod`. Any other value is treated as a non-production environment.
+> **Note on `NODE_ENV`**: the value checked for production behaviour is exactly `prod`. Any other value is treated as a non-production environment. In production the database runs on the same Docker network as the API and is not exposed to the internet, so the connection does not use SSL.
 
 ### Supabase Configuration
 
@@ -356,14 +400,15 @@ Swagger UI: `http://localhost:3000/api`
 
 ## 📡 API Endpoints
 
-All endpoints are prefixed with `/api`. Access levels: **Public** needs no token, **Auth** needs a valid JWT, **Admin** needs a JWT belonging to a user with the `admin` role.
+All endpoints are prefixed with `/api`. Access levels: **Public** needs no token, **Auth** needs a valid JWT, **Admin** needs a JWT belonging to a user with the `admin` role, and **Owner/Admin** additionally requires the token to belong to the user being operated on.
 
 ### Authentication — `/api/auth`
 
-| Method | Endpoint    | Description                    | Access |
-| ------ | ----------- | ------------------------------ | ------ |
-| `POST` | `/login`    | Log in with email and password | Public |
-| `POST` | `/register` | Register a new user and log in | Public |
+| Method | Endpoint    | Description                         | Access |
+| ------ | ----------- | ----------------------------------- | ------ |
+| `POST` | `/login`    | Log in with email and password      | Public |
+| `POST` | `/register` | Register a new user and log in      | Public |
+| `POST` | `/refresh`  | Renew the token of the current user | Auth   |
 
 ### Movies — `/api/movies`
 
@@ -411,23 +456,26 @@ All endpoints are prefixed with `/api`. Access levels: **Public** needs no token
 
 ### Genres — `/api/genres`
 
-| Method   | Endpoint | Description             | Access |
-| -------- | -------- | ----------------------- | ------ |
-| `GET`    | `/`      | List genres (paginated) | Public |
-| `GET`    | `/:id`   | Get one genre           | Public |
-| `POST`   | `/`      | Create a genre          | Auth   |
-| `PATCH`  | `/:id`   | Update a genre          | Auth   |
-| `DELETE` | `/:id`   | Delete a genre          | Auth   |
+| Method   | Endpoint | Description                     | Access |
+| -------- | -------- | ------------------------------- | ------ |
+| `GET`    | `/`      | List genres (paginated)         | Public |
+| `GET`    | `/all`   | List every genre, no pagination | Public |
+| `GET`    | `/:id`   | Get one genre                   | Public |
+| `POST`   | `/`      | Create a genre                  | Auth   |
+| `PATCH`  | `/:id`   | Update a genre                  | Auth   |
+| `DELETE` | `/:id`   | Delete a genre permanently      | Auth   |
 
 ### Users — `/api/user`
 
-| Method   | Endpoint      | Description                    | Access |
-| -------- | ------------- | ------------------------------ | ------ |
-| `POST`   | `/`           | Create a user                  | Public |
-| `GET`    | `/:id`        | Get a user by id               | Auth   |
-| `PATCH`  | `/:id`        | Update a user                  | Auth   |
-| `DELETE` | `/:id`        | Soft delete a user             | Auth   |
-| `POST`   | `/reactivate` | Reactivate a soft-deleted user | Auth   |
+| Method   | Endpoint      | Description                    | Access      |
+| -------- | ------------- | ------------------------------ | ----------- |
+| `POST`   | `/`           | Create a user                  | Public      |
+| `GET`    | `/:id`        | Get a user by id               | Owner/Admin |
+| `PATCH`  | `/:id`        | Update a user                  | Owner/Admin |
+| `DELETE` | `/:id`        | Soft delete a user             | Owner/Admin |
+| `POST`   | `/reactivate` | Reactivate a soft-deleted user | Owner/Admin |
+
+**Owner/Admin** means a valid JWT whose user id matches the id in the request, or any token with the `admin` role. Anything else gets a `403 Forbidden`.
 
 ### Files — `/api/files`
 
@@ -501,7 +549,7 @@ curl -X POST http://localhost:3000/api/movies \
 | ------ | ------------------------------------------------------------------------------- |
 | `400`  | Invalid payload, unknown properties, malformed UUID, empty update, invalid file |
 | `401`  | Missing, expired, or invalid token                                              |
-| `403`  | Valid token without the required role                                           |
+| `403`  | Valid token without the required role, or acting on another user's record       |
 | `404`  | Resource not found or inactive                                                  |
 | `409`  | A record with the same identifying fields already exists                        |
 
@@ -512,7 +560,8 @@ curl -X POST http://localhost:3000/api/movies \
 The interactive API documentation is available at:
 
 ```
-http://localhost:3000/api
+http://localhost:3000/api                          # local
+https://entertainment-portfolio-develop.lat/api    # production
 ```
 
 There you can:
@@ -548,8 +597,10 @@ docker compose down
 
 Included services:
 
-- PostgreSQL 16.2 (port from `DB_PORT`, data persisted in `./postgres`)
-- Redis 8.6.3 (port 6379)
+- PostgreSQL 16-alpine (port from `DB_PORT`, data persisted in `./postgres`)
+- Redis 7 (port 6379)
+
+The application itself runs outside Docker in this setup, with `pnpm run start:dev`.
 
 ### Docker Compose for Production
 
@@ -559,10 +610,21 @@ docker compose -f docker-compose.prod.yaml up -d
 
 Included services:
 
-- App, from the published image (port from `PORT`)
-- Redis 8.6.3 (port 6379)
+| Service              | Image                | Role                                                              |
+| -------------------- | -------------------- | ----------------------------------------------------------------- |
+| `postgres`           | `postgres:16-alpine` | Database, bound to `127.0.0.1:5432`, `pgdata` volume, healthcheck |
+| `redis`              | `redis:7-alpine`     | Cache, reachable only from the internal network                   |
+| `app1` `app2` `app3` | `${APP_IMAGE}`       | Three replicas of the API, started once Postgres is healthy       |
+| `nginx`              | `nginx:alpine`       | Public entry point on 80/443: TLS, redirect, and load balancing   |
+| `certbot`            | `certbot/certbot`    | Certificate issuance and renewal, under the `tools` profile       |
 
-> **Note**: in production, PostgreSQL is expected to be an external managed service (RDS, Supabase, etc.), and the connection uses SSL.
+Every replica reads its configuration from the same `.env` through `env_file`, and `APP_IMAGE` selects which published tag to run (defaults to `lysanderpr/entertainments:latest`).
+
+Certbot is not started with the rest of the stack. It only runs on demand:
+
+```bash
+docker compose -f docker-compose.prod.yaml --profile tools run --rm certbot renew
+```
 
 ### Build the Image Locally
 
@@ -574,20 +636,71 @@ docker build -t entertainments:latest .
 docker build -t entertainments:1.0.0 .
 ```
 
+## 🚢 Deployment
+
+The API runs on an AWS EC2 instance at `https://entertainment-portfolio-develop.lat/api`, and every push to `main` that passes the tests deploys itself.
+
+### Production Topology
+
+```
+Internet ──► nginx (80/443)
+              │  · 80 redirects to 443, except the ACME challenge
+              │  · TLS with Let's Encrypt certificates
+              │  · /api proxied to the upstream, round-robin
+              ▼
+      app1 · app2 · app3     (three replicas of the image, port 3000)
+              │
+              ├──► postgres  (127.0.0.1:5432, pgdata volume)
+              └──► redis     (internal network)
+```
+
+The upstream marks a replica as unavailable after `max_fails=3` within `fail_timeout=30s`, so a container that dies stops receiving traffic while the other two keep serving.
+
+### How a Deployment Runs
+
+The `deploy` job never opens an SSH connection. It authenticates against AWS with OIDC, assumes a role, and sends `scripts/deploy.sh` to the instance through SSM (`AWS-RunShellScript`), base64-encoded so the script runs under `bash` rather than the `dash` that SSM would otherwise use.
+
+On the instance, the script:
+
+1. Verifies that `/home/ubuntu/entertainment-catalog/.env` exists — it is maintained by hand and the pipeline never touches it
+2. Downloads `docker-compose.prod.yaml`, `nginx.conf`, and `nginx-main.conf` from GitHub **pinned to the deployed commit**, so the deployment is reproducible instead of depending on whatever `main` holds at that moment
+3. Pulls the image for the exact version tag
+4. Starts Postgres and Redis with `--wait`, so the healthcheck passes before anything else runs
+5. Applies migrations from an ephemeral container built on the new image, **before** starting the replicas — otherwise old and new replicas would coexist against different schemas
+6. Brings up the replicas and nginx
+7. Smoke tests `https://localhost/api` from inside the instance, retrying up to ten times, and dumps the logs of `app1` and `nginx` if it never answers `200`
+8. Prunes dangling images so the EBS volume does not fill up
+
+The workflow then waits for the SSM command, prints its output in the Actions log, and fails the job if the final status is not `Success`.
+
+### Manual Deployment
+
+The same script can be run by hand on the instance, which is the fastest way to roll back to a previous tag:
+
+```bash
+sudo APP_IMAGE=lysanderpr/entertainments:1.4.0 GIT_SHA=main bash deploy.sh
+```
+
+> **Note**: step 2 downloads the infrastructure files from `raw.githubusercontent.com`, which works because the repository is public. If it ever becomes private those files would have to be uploaded from the runner (S3) or embedded in the SSM command.
+
 ## 🔄 CI/CD
 
-`.github/workflows/docker-image.yml` runs on every push and pull request to `main`, in two jobs:
+`.github/workflows/docker-image.yml` runs on every push and pull request to `main`, in three jobs:
 
-**`test`** — spins up PostgreSQL 16.2 and Redis 8.6.3 as service containers with health checks, installs dependencies with a frozen lockfile, and runs the unit and e2e suites against real infrastructure.
+**`test`** — runs on both pushes and pull requests. Spins up PostgreSQL 16 and Redis 7 as service containers with health checks, installs dependencies with a frozen lockfile, and runs the unit and e2e suites against real infrastructure.
 
-**`build`** — only after the tests pass:
+**`build`** — only after the tests pass, and only on a push to `main`:
 
 1. Derives the next semantic version from commit messages (`major:` bumps major, `feat:` bumps minor)
 2. Creates and pushes the corresponding git tag
 3. Builds the image for `linux/amd64` and `linux/arm64` with QEMU and Buildx
 4. Pushes it to Docker Hub tagged with both the version and `latest`
 
-All credentials and database settings come from repository secrets.
+**`deploy`** — takes the version produced by `build` and rolls it out to the EC2 instance through AWS SSM, then waits for the result and surfaces the deployment output in the Actions log. The full sequence is described in [Deployment](#-deployment).
+
+A pull request therefore only runs the test suite; nothing is published or deployed until the branch lands on `main`.
+
+All credentials, database settings, and AWS identifiers come from repository secrets. The deploy job authenticates with OIDC (`id-token: write`) instead of static AWS keys.
 
 ## 🎯 Available Scripts
 
@@ -631,12 +744,15 @@ pnpm run test:debug  # Tests with the debugger attached
 
 The test suite covers services, controllers, modules, entities, DTOs, guards, decorators, filters, pipes, and helpers.
 
-| Metric             | Value |
-| ------------------ | ----- |
-| Unit test files    | 71    |
-| E2E test suites    | 8     |
-| Statement coverage | 93.5% |
-| Branch coverage    | 81.7% |
+| Metric             | Value  |
+| ------------------ | ------ |
+| Unit test suites   | 77     |
+| Unit tests         | 519    |
+| E2E test suites    | 8      |
+| Statement coverage | 91.92% |
+| Branch coverage    | 81.97% |
+| Function coverage  | 74.79% |
+| Line coverage      | 92.09% |
 
 E2E specs live in `test/` and exercise each module end to end — authentication flows, CRUD lifecycles, validation failures, and authorization rules — against a running PostgreSQL and Redis.
 
@@ -661,11 +777,10 @@ pnpm run test:cov
 
 ## 🌟 Roadmap
 
+- [x] Ownership checks on user routes
+- [x] Access token renewal endpoint
 - [ ] Rate limiting
-- [ ] Email verification for the `verified` user flag
-- [ ] Refresh tokens
 - [ ] Full-text search and filtering across the catalog
-- [ ] Admin role assignment endpoint
 
 ## 📄 License
 

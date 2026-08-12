@@ -15,6 +15,7 @@ import { AlbumsModule } from './albums.module';
 import { AlbumsController } from './albums.controller';
 import { AlbumsService } from './albums.service';
 import { CommonModule } from '@/common/common.module';
+import { SongsModule } from '@/songs/songs.module';
 
 describe('AlbumsModule', () => {
   let module: TestingModule;
@@ -61,6 +62,11 @@ describe('AlbumsModule', () => {
   it('should import CommonModule', () => {
     const imports = Reflect.getMetadata(MODULE_METADATA.IMPORTS, AlbumsModule);
     expect(imports).toContain(CommonModule);
+  });
+
+  it('should import SongsModule to reach SongsService', () => {
+    const imports = Reflect.getMetadata(MODULE_METADATA.IMPORTS, AlbumsModule);
+    expect(imports).toContain(SongsModule);
   });
 
   it('should export AlbumsService', () => {

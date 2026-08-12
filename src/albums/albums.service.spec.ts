@@ -23,6 +23,7 @@ import { buildStoragePath } from '@/common/helpers/build-storage-path.helper';
 import { ALBUMS_PATH } from './types/consts/albums.const';
 import { APP_PREFIX } from '@/common/types/consts/app-prefix.const';
 import { CacheService } from '@/common/cache/cache.service';
+import { SongsService } from '@/songs/songs.service';
 
 describe('AlbumsService', () => {
   let service: AlbumsService;
@@ -30,6 +31,7 @@ describe('AlbumsService', () => {
   let commonService: CommonService;
   let dataSource: DataSource;
   let cacheService: { deleteByPrefix: jest.Mock };
+  let songsService: { reactivateByAlbumId: jest.Mock };
   let managerMock: {
     create: jest.Mock;
     save: jest.Mock;
@@ -106,6 +108,8 @@ describe('AlbumsService', () => {
 
     const cacheServiceMock = { deleteByPrefix: jest.fn() };
 
+    const songsServiceMock = { reactivateByAlbumId: jest.fn() };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AlbumsService,
@@ -113,6 +117,7 @@ describe('AlbumsService', () => {
         { provide: CommonService, useValue: commonServiceMock },
         { provide: DataSource, useValue: dataSourceMock },
         { provide: CacheService, useValue: cacheServiceMock },
+        { provide: SongsService, useValue: songsServiceMock },
       ],
     }).compile();
 
@@ -121,6 +126,7 @@ describe('AlbumsService', () => {
     commonService = module.get<CommonService>(CommonService);
     dataSource = module.get<DataSource>(DataSource);
     cacheService = module.get(CacheService);
+    songsService = module.get(SongsService);
   });
 
   afterEach(() => {
@@ -448,6 +454,42 @@ describe('AlbumsService', () => {
       NotFoundException,
     );
     expect(repository.update).not.toHaveBeenCalled();
+    expect(cacheService.deleteByPrefix).not.toHaveBeenCalled();
+  });
+
+  it('should delegate to the songs service and invalidate the albums cache prefix', async () => {
+    const reactivatedSongs = [mockSong];
+
+    jest.spyOn(repository, 'findOneBy').mockResolvedValue(mockAlbum);
+    songsService.reactivateByAlbumId.mockResolvedValue(reactivatedSongs);
+
+    const result = await service.reactivateSongs(mockAlbum.id);
+
+    expect(repository.findOneBy).toHaveBeenCalledWith({ id: mockAlbum.id });
+    expect(songsService.reactivateByAlbumId).toHaveBeenCalledWith(mockAlbum.id);
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
+    expect(result).toEqual(reactivatedSongs);
+  });
+
+  it('should throw NotFoundException if the album does not exist', async () => {
+    jest.spyOn(repository, 'findOneBy').mockResolvedValue(null);
+
+    await expect(service.reactivateSongs(mockAlbum.id)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(songsService.reactivateByAlbumId).not.toHaveBeenCalled();
+    expect(cacheService.deleteByPrefix).not.toHaveBeenCalled();
+  });
+
+  it('should throw ConflictException if the album is inactive', async () => {
+    jest
+      .spyOn(repository, 'findOneBy')
+      .mockResolvedValue({ ...mockAlbum, active: false } as Album);
+
+    await expect(service.reactivateSongs(mockAlbum.id)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(songsService.reactivateByAlbumId).not.toHaveBeenCalled();
     expect(cacheService.deleteByPrefix).not.toHaveBeenCalled();
   });
 });

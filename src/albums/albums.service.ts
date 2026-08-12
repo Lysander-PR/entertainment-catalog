@@ -23,6 +23,7 @@ import { Song } from '@/songs/entities/song.entity';
 import { ALBUMS_PATH } from './types/consts/albums.const';
 import { EntertainmentStorage } from '@/common/abstracts/entertainment-storage.abstract';
 import { CacheService } from '@/common/cache/cache.service';
+import { SongsService } from '@/songs/songs.service';
 
 @Injectable()
 export class AlbumsService extends EntertainmentStorage {
@@ -32,6 +33,7 @@ export class AlbumsService extends EntertainmentStorage {
     private readonly commonService: CommonService,
     private readonly dataSource: DataSource,
     private readonly cacheService: CacheService,
+    private readonly songsService: SongsService,
   ) {
     super(ALBUMS_PATH);
   }
@@ -177,6 +179,25 @@ export class AlbumsService extends EntertainmentStorage {
 
     await this.cacheService.deleteByPrefix(this.cacheKey);
     return album;
+  }
+
+  async reactivateSongs(id: string): Promise<Song[]> {
+    const album = await this.albumRepository.findOneBy({ id });
+
+    if (!album) {
+      throw new NotFoundException(`Album with id ${id} not found`);
+    }
+
+    if (!album.active) {
+      throw new ConflictException(
+        `Album with id ${id} is inactive, reactivate the album first`,
+      );
+    }
+
+    const songs = await this.songsService.reactivateByAlbumId(id);
+    await this.cacheService.deleteByPrefix(this.cacheKey);
+
+    return songs;
   }
 
   private async checkDuplicates({

@@ -102,6 +102,22 @@ export class SongsService extends CacheKey {
     return song;
   }
 
+  async reactivateByAlbumId(albumId: string): Promise<Song[]> {
+    const songs = await this.songRepository.findBy({ albumId, active: false });
+
+    if (songs.length === 0) {
+      return songs;
+    }
+
+    await this.songRepository.update(
+      { albumId, active: false },
+      { active: true },
+    );
+    await this.cacheService.deleteByPrefix(this.cacheKey);
+
+    return this.songRepository.findBy({ albumId });
+  }
+
   private async checkDuplicates({
     id,
     albumId,

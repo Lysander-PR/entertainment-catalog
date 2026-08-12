@@ -576,4 +576,121 @@ describe('Albums (e2e)', () => {
       expect(restored.body.id).toBe(created.body.id);
     });
   });
+
+  describe('POST /api/albums/:id/songs/reactivate', () => {
+    it('rejects unauthenticated requests', async () => {
+      const response = await request(app.getHttpServer())
+        .post(`/api/albums/${albumIds[0]}/songs/reactivate`)
+        .expect(401);
+
+      expect(typeof response.body.message).toBe('string');
+      expect(response.body.message).toBe('Unauthorized');
+    });
+
+    it('returns 404 for an unknown album id', async () => {
+      const unknownId = '00000000-0000-0000-0000-000000000000';
+
+      const response = await request(app.getHttpServer())
+        .post(`/api/albums/${unknownId}/songs/reactivate`)
+        .set('Authorization', authHeader)
+        .expect(404);
+
+      expect(typeof response.body.message).toBe('string');
+      expect(response.body.message).toBe(
+        `Album with id ${unknownId} not found`,
+      );
+    });
+
+    it('returns 409 when the album is inactive', async () => {
+      const payload: CreateAlbumDto = {
+        album: uniqueWord('Album'),
+        studio: 'Studio',
+        releaseDate: new Date('2020-01-01'),
+        artist: 'Artist',
+        songs: [{ composer: 'Composer', title: uniqueWord('Song'), genreId }],
+      };
+
+      const created = await request(app.getHttpServer())
+        .post('/api/albums')
+        .set('Authorization', authHeader)
+        .send(payload)
+        .expect(201);
+      albumIds.push(created.body.id);
+      songIds.push(created.body.songs[0].id);
+
+      await request(app.getHttpServer())
+        .delete(`/api/albums/${created.body.id}`)
+        .set('Authorization', authHeader)
+        .expect(200);
+
+      const response = await request(app.getHttpServer())
+        .post(`/api/albums/${created.body.id}/songs/reactivate`)
+        .set('Authorization', authHeader)
+        .expect(409);
+
+      expect(typeof response.body.message).toBe('string');
+      expect(response.body.message).toBe(
+        `Album with id ${created.body.id} is inactive, reactivate the album first`,
+      );
+    });
+
+    it('reactivates every soft-deleted song of the album', async () => {
+      const payload: CreateAlbumDto = {
+        album: uniqueWord('Album'),
+        studio: 'Studio',
+        releaseDate: new Date('2020-01-01'),
+        artist: 'Artist',
+        songs: [
+          { composer: 'Composer', title: uniqueWord('Song'), genreId },
+          { composer: 'Composer', title: uniqueWord('Song'), genreId },
+        ],
+      };
+
+      const created = await request(app.getHttpServer())
+        .post('/api/albums')
+        .set('Authorization', authHeader)
+        .send(payload)
+        .expect(201);
+      albumIds.push(created.body.id);
+      const [firstSong, secondSong] = created.body.songs;
+      songIds.push(firstSong.id, secondSong.id);
+
+      await request(app.getHttpServer())
+        .delete(`/api/songs/${firstSong.id}`)
+        .set('Authorization', authHeader)
+        .expect(200);
+
+      const inactiveSong = await dataSource
+        .getRepository(Song)
+        .findOneBy({ id: firstSong.id });
+      expect(inactiveSong?.active).toBe(false);
+
+      const response = await request(app.getHttpServer())
+        .post(`/api/albums/${created.body.id}/songs/reactivate`)
+        .set('Authorization', authHeader)
+        .expect(201);
+
+      expect(response.body).toBeInstanceOf(Array);
+      expect(response.body).toHaveLength(2);
+      (response.body as Record<string, unknown>[]).forEach((song) => {
+        expect(song).toEqual(
+          expect.objectContaining({
+            id: expect.any(String),
+            composer: expect.any(String),
+            title: expect.any(String),
+          }),
+        );
+        expect(song).not.toHaveProperty('active');
+        expect(song).not.toHaveProperty('albumId');
+      });
+      expect(
+        (response.body as { id: string }[]).map((song) => song.id).sort(),
+      ).toEqual([firstSong.id, secondSong.id].sort());
+
+      const reactivatedSong = await dataSource
+        .getRepository(Song)
+        .findOneBy({ id: firstSong.id });
+      expect(reactivatedSong?.active).toBe(true);
+    });
+  });
 });

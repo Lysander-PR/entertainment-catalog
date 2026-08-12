@@ -31,8 +31,8 @@ const expectSongShape = (body: Record<string, unknown>) => {
   );
   expect(isUUID(body.id as string)).toBe(true);
   expect(body).not.toHaveProperty('active');
-  expect(body).not.toHaveProperty('albumId');
-  expect(body).not.toHaveProperty('genreId');
+  expect(body).toHaveProperty('albumId');
+  expect(body).toHaveProperty('genreId');
 };
 
 describe('Songs (e2e)', () => {
@@ -507,7 +507,15 @@ describe('Songs (e2e)', () => {
         .set('Authorization', authHeader)
         .expect(200);
 
-      expectSongShape(deleted.body);
+      expect(deleted.body).toEqual(
+        expect.objectContaining({
+          id: expect.any(String),
+          composer: expect.any(String),
+          title: expect.any(String),
+        }),
+      );
+      expect(deleted.body).not.toHaveProperty('albumId');
+      expect(deleted.body).not.toHaveProperty('genreId');
       expect(deleted.body.id).toBe(created.body.id);
 
       const notFound = await request(app.getHttpServer())

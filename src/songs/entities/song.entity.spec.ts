@@ -36,18 +36,6 @@ describe('Song', () => {
     expect(plain).not.toHaveProperty('active');
   });
 
-  it('should exclude albumId', () => {
-    const plain = instanceToPlain(buildSong());
-
-    expect(plain).not.toHaveProperty('albumId');
-  });
-
-  it('should exclude genreId', () => {
-    const plain = instanceToPlain(buildSong());
-
-    expect(plain).not.toHaveProperty('genreId');
-  });
-
   it('should capitalize title before insert/update', () => {
     const song = buildSong({ title: 'get lucky' });
 

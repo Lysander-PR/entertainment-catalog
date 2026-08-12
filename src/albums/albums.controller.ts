@@ -40,6 +40,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ALBUMS_PATH } from './types/consts/albums.const';
+import { SONGS_PATH } from '@/songs/types/consts/songs.const';
+import { SongResponseWithoutRelationsDto } from '@/songs/dto/song-response-without-relations.dto';
 import { Auth } from '@/auth/decorator/auth.decorator';
 import { Public } from '@/auth/decorator/public.decorator';
 import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
@@ -130,6 +132,33 @@ export class AlbumsController {
   @ApiBadRequestResponse({ description: 'Invalid UUID format' })
   reactivate(@Body('id', ParseUUIDPipe) id: string) {
     return this.albumsService.reactivate(id);
+  }
+
+  @Post(`:id/${SONGS_PATH}/reactivate`)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Reactivate every soft-deleted song of an album',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    format: 'uuid',
+    description: 'Album id that owns the songs',
+  })
+  @ApiOkResponse({
+    description:
+      'Songs reactivated successfully. Returns the album songs, or an empty array when the album had no inactive songs',
+    type: SongResponseWithoutRelationsDto,
+    isArray: true,
+  })
+  @ApiNotFoundResponse({ description: 'Album not found' })
+  @ApiConflictResponse({
+    description: 'Album is inactive, it must be reactivated first',
+  })
+  @ApiBadRequestResponse({ description: 'Invalid UUID format' })
+  @SerializeOptions({ type: SongResponseWithoutRelationsDto })
+  reactivateSongs(@Param('id', ParseUUIDPipe) id: string) {
+    return this.albumsService.reactivateSongs(id);
   }
 
   @Get()

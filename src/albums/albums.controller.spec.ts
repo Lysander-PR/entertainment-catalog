@@ -42,6 +42,7 @@ describe('AlbumsController', () => {
       update: jest.fn(),
       remove: jest.fn(),
       reactivate: jest.fn(),
+      reactivateSongs: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -153,5 +154,23 @@ describe('AlbumsController', () => {
 
     expect(service.reactivate).toHaveBeenCalledWith(mockAlbum.id);
     expect(result).toEqual(mockAlbum);
+  });
+
+  it('should reactivate every song of an album', async () => {
+    jest.spyOn(service, 'reactivateSongs').mockResolvedValue([mockSong]);
+
+    const result = await controller.reactivateSongs(mockAlbum.id);
+
+    expect(service.reactivateSongs).toHaveBeenCalledWith(mockAlbum.id);
+    expect(result).toEqual([mockSong]);
+  });
+
+  it('should return an empty array when the album has no inactive songs', async () => {
+    jest.spyOn(service, 'reactivateSongs').mockResolvedValue([]);
+
+    const result = await controller.reactivateSongs(mockAlbum.id);
+
+    expect(service.reactivateSongs).toHaveBeenCalledWith(mockAlbum.id);
+    expect(result).toEqual([]);
   });
 });

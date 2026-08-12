@@ -49,6 +49,7 @@ describe('SongsService', () => {
       findAndCount: jest.fn(),
       findOne: jest.fn(),
       findOneBy: jest.fn(),
+      findBy: jest.fn(),
       merge: jest.fn(),
       update: jest.fn(),
     };
@@ -243,6 +244,44 @@ describe('SongsService', () => {
     await expect(service.reactivate(mockSong.id)).rejects.toBeInstanceOf(
       NotFoundException,
     );
+    expect(repository.update).not.toHaveBeenCalled();
+    expect(cacheService.deleteByPrefix).not.toHaveBeenCalled();
+  });
+
+  it('should reactivate every inactive song of the album and return the album songs', async () => {
+    const inactiveSong = { ...mockSong, active: false } as Song;
+
+    jest
+      .spyOn(repository, 'findBy')
+      .mockResolvedValueOnce([inactiveSong])
+      .mockResolvedValueOnce([mockSong]);
+    jest
+      .spyOn(repository, 'update')
+      .mockResolvedValue({ affected: 1 } as UpdateResult);
+
+    const result = await service.reactivateByAlbumId(mockSong.albumId);
+
+    expect(repository.findBy).toHaveBeenNthCalledWith(1, {
+      albumId: mockSong.albumId,
+      active: false,
+    });
+    expect(repository.update).toHaveBeenCalledWith(
+      { albumId: mockSong.albumId, active: false },
+      { active: true },
+    );
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
+    expect(repository.findBy).toHaveBeenNthCalledWith(2, {
+      albumId: mockSong.albumId,
+    });
+    expect(result).toEqual([mockSong]);
+  });
+
+  it('should return an empty array without updating when the album has no inactive songs', async () => {
+    jest.spyOn(repository, 'findBy').mockResolvedValue([]);
+
+    const result = await service.reactivateByAlbumId(mockSong.albumId);
+
+    expect(result).toEqual([]);
     expect(repository.update).not.toHaveBeenCalled();
     expect(cacheService.deleteByPrefix).not.toHaveBeenCalled();
   });

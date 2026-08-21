@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { DataSource, In, Not, Repository } from 'typeorm';
 
 import { CreateSongDto } from './dto/create-song.dto';
 import { UpdateSongDto } from './dto/update-song.dto';
@@ -18,6 +18,7 @@ import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-param
 import { SONGS_PATH } from './types/consts/songs.const';
 import { CacheKey } from '@/common/abstracts/cache-key.abstract';
 import { CacheService } from '@/common/cache/cache.service';
+import { SyncSongByAlbumDto } from '@/albums/dto/update-album-songs.dto';
 
 @Injectable()
 export class SongsService extends CacheKey {
@@ -25,6 +26,7 @@ export class SongsService extends CacheKey {
     @InjectRepository(Song)
     private readonly songRepository: Repository<Song>,
     private readonly cacheService: CacheService,
+    private readonly dataSource: DataSource,
   ) {
     super(SONGS_PATH);
   }
@@ -116,6 +118,44 @@ export class SongsService extends CacheKey {
     await this.cacheService.deleteByPrefix(this.cacheKey);
 
     return this.songRepository.findBy({ albumId });
+  }
+
+  async syncByAlbumId(
+    albumId: string,
+    songs: SyncSongByAlbumDto[],
+  ): Promise<Song[]> {
+    this.checkDuplicatesInPayload(albumId, songs);
+    const songsInAlbum = await this.songRepository.find({
+      where: { albumId },
+    });
+
+    // * Delete songs
+
+    // * Create songs
+
+    // * Update songs
+
+    await this.cacheService.deleteByPrefix(this.cacheKey);
+    return this.songRepository.findBy({ albumId, active: true });
+  }
+
+  private checkDuplicatesInPayload(
+    albumId: string,
+    songs: SyncSongByAlbumDto[],
+  ): void {
+    const titles = new Set<string>();
+
+    for (const { title } of songs) {
+      const song = title.toLocaleLowerCase();
+
+      if (titles.has(song)) {
+        throw new ConflictException(
+          `Song with title ${title} is duplicated in the album with id ${albumId}`,
+        );
+      }
+
+      titles.add(song);
+    }
   }
 
   private async checkDuplicates({

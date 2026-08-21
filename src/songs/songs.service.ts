@@ -19,6 +19,11 @@ import { SONGS_PATH } from './types/consts/songs.const';
 import { CacheKey } from '@/common/abstracts/cache-key.abstract';
 import { CacheService } from '@/common/cache/cache.service';
 import { SyncSongByAlbumDto } from '@/albums/dto/update-album-songs.dto';
+import {
+  buildIdsToDeactivate,
+  buildToCreate,
+  buildToUpdate,
+} from './helpers/build-songs.helper';
 
 @Injectable()
 export class SongsService extends CacheKey {
@@ -47,6 +52,13 @@ export class SongsService extends CacheKey {
     return paginate(this.songRepository, paginationDto, {
       where: { active: true },
       relations: { album: true, genre: true },
+    });
+  }
+
+  findByAlbum(albumId: string): Promise<Song[]> {
+    return this.songRepository.find({
+      where: { albumId, active: true },
+      relations: { genre: true },
     });
   }
 
@@ -125,18 +137,32 @@ export class SongsService extends CacheKey {
     songs: SyncSongByAlbumDto[],
   ): Promise<Song[]> {
     this.checkDuplicatesInPayload(albumId, songs);
-    const songsInAlbum = await this.songRepository.find({
-      where: { albumId },
+    const songsInAlbum = await this.findByAlbum(albumId);
+
+    const idsToDeactivate = buildIdsToDeactivate(songsInAlbum, songs);
+    const songsToCreate = buildToCreate(albumId, songs, this.songRepository);
+    const songsToUpdate = buildToUpdate(songsInAlbum, songs);
+
+    await this.dataSource.transaction(async (manager) => {
+      if (songsToCreate.length) {
+        await manager.insert(Song, songsToCreate);
+      }
+
+      if (idsToDeactivate.length) {
+        await manager.update(
+          Song,
+          { id: In(idsToDeactivate) },
+          { active: false },
+        );
+      }
+
+      for (const songLike of songsToUpdate) {
+        await manager.update(Song, { id: songLike.id }, songLike);
+      }
     });
 
-    // * Delete songs
-
-    // * Create songs
-
-    // * Update songs
-
     await this.cacheService.deleteByPrefix(this.cacheKey);
-    return this.songRepository.findBy({ albumId, active: true });
+    return this.findByAlbum(albumId);
   }
 
   private checkDuplicatesInPayload(

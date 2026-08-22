@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
-import { Not, Repository, UpdateResult } from 'typeorm';
+import { DataSource, In, Repository, Not, UpdateResult } from 'typeorm';
 
 import { SongsService } from './songs.service';
 import { Song } from './entities/song.entity';
@@ -23,6 +23,7 @@ describe('SongsService', () => {
   let service: SongsService;
   let repository: Repository<Song>;
   let cacheService: { deleteByPrefix: jest.Mock };
+  let managerMock: { insert: jest.Mock; update: jest.Mock };
 
   const cacheKey = `/${APP_PREFIX}/${SONGS_PATH}`;
 
@@ -50,17 +51,28 @@ describe('SongsService', () => {
       findOne: jest.fn(),
       findOneBy: jest.fn(),
       findBy: jest.fn(),
+      find: jest.fn(),
       merge: jest.fn(),
       update: jest.fn(),
     };
 
     const cacheServiceMock = { deleteByPrefix: jest.fn() };
 
+    managerMock = { insert: jest.fn(), update: jest.fn() };
+    const dataSourceMock = {
+      transaction: jest
+        .fn()
+        .mockImplementation((work: (manager: unknown) => Promise<unknown>) =>
+          work(managerMock),
+        ),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SongsService,
         { provide: getRepositoryToken(Song), useValue: repositoryMock },
         { provide: CacheService, useValue: cacheServiceMock },
+        { provide: DataSource, useValue: dataSourceMock },
       ],
     }).compile();
 
@@ -284,5 +296,144 @@ describe('SongsService', () => {
     expect(result).toEqual([]);
     expect(repository.update).not.toHaveBeenCalled();
     expect(cacheService.deleteByPrefix).not.toHaveBeenCalled();
+  });
+
+  it('should sync the album tracklist creating, updating and deactivating songs', async () => {
+    const songToKeep = { ...mockSong } as Song;
+    const songToUpdate = {
+      ...mockSong,
+      id: 'b2f6a9f1-4b56-4f84-89c4-8ebf9d18a744',
+      title: 'Instant Crush',
+    } as Song;
+    const songToDeactivate = {
+      ...mockSong,
+      id: 'c3f6a9f1-4b56-4f84-89c4-8ebf9d18a744',
+      title: 'Around the World',
+    } as Song;
+    const newSong = {
+      ...mockSong,
+      id: 'd4f6a9f1-4b56-4f84-89c4-8ebf9d18a744',
+      title: 'Doin It Right',
+    } as Song;
+
+    jest
+      .spyOn(repository, 'find')
+      .mockResolvedValueOnce([songToKeep, songToUpdate, songToDeactivate])
+      .mockResolvedValueOnce([songToKeep, songToUpdate, newSong]);
+    jest
+      .spyOn(repository, 'create')
+      .mockReturnValue([newSong] as unknown as Song);
+
+    const updatedTitle = 'Instant Crush (Remix)';
+    const result = await service.syncByAlbumId(mockSong.albumId, [
+      {
+        id: songToKeep.id,
+        composer: songToKeep.composer,
+        title: songToKeep.title,
+        genreId: songToKeep.genreId,
+      },
+      {
+        id: songToUpdate.id,
+        composer: songToUpdate.composer,
+        title: updatedTitle,
+        genreId: songToUpdate.genreId,
+      },
+      {
+        composer: newSong.composer,
+        title: newSong.title,
+        genreId: newSong.genreId,
+      },
+    ]);
+
+    expect(repository.create).toHaveBeenCalledWith([
+      {
+        composer: newSong.composer,
+        title: newSong.title,
+        genreId: newSong.genreId,
+        albumId: mockSong.albumId,
+      },
+    ]);
+    expect(managerMock.insert).toHaveBeenCalledWith(Song, [newSong]);
+    expect(managerMock.update).toHaveBeenCalledWith(
+      Song,
+      { id: In([songToDeactivate.id]) },
+      { active: false },
+    );
+    expect(managerMock.update).toHaveBeenCalledWith(
+      Song,
+      { id: songToUpdate.id },
+      {
+        id: songToUpdate.id,
+        composer: songToUpdate.composer,
+        title: updatedTitle,
+        genreId: songToUpdate.genreId,
+      },
+    );
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
+    expect(result).toEqual([songToKeep, songToUpdate, newSong]);
+  });
+
+  it('should not create, update or deactivate anything when the payload matches the current tracklist', async () => {
+    jest.spyOn(repository, 'find').mockResolvedValue([mockSong]);
+    jest
+      .spyOn(repository, 'create')
+      .mockReturnValue([mockSong] as unknown as Song);
+
+    await service.syncByAlbumId(mockSong.albumId, [
+      {
+        id: mockSong.id,
+        composer: mockSong.composer,
+        title: mockSong.title,
+        genreId: mockSong.genreId,
+      },
+    ]);
+
+    expect(managerMock.insert).not.toHaveBeenCalled();
+    expect(managerMock.update).not.toHaveBeenCalled();
+  });
+
+  it('should ignore a payload id that does not belong to the album', async () => {
+    jest
+      .spyOn(repository, 'find')
+      .mockResolvedValueOnce([mockSong])
+      .mockResolvedValueOnce([mockSong]);
+    jest.spyOn(repository, 'create').mockReturnValue([] as unknown as Song);
+
+    await service.syncByAlbumId(mockSong.albumId, [
+      {
+        id: mockSong.id,
+        composer: mockSong.composer,
+        title: mockSong.title,
+        genreId: mockSong.genreId,
+      },
+      {
+        id: 'e5f6a9f1-4b56-4f84-89c4-8ebf9d18a744',
+        composer: mockSong.composer,
+        title: 'Unknown Song',
+        genreId: mockSong.genreId,
+      },
+    ]);
+
+    expect(managerMock.insert).not.toHaveBeenCalled();
+    expect(managerMock.update).not.toHaveBeenCalled();
+    expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
+  });
+
+  it('should throw ConflictException when the payload has duplicated song titles', async () => {
+    const song = {
+      composer: mockSong.composer,
+      title: mockSong.title,
+      genreId: mockSong.genreId,
+    };
+
+    await expect(
+      service.syncByAlbumId(mockSong.albumId, [
+        song,
+        { ...song, title: song.title.toUpperCase() },
+      ]),
+    ).rejects.toThrow(ConflictException);
+
+    expect(repository.findBy).not.toHaveBeenCalled();
+    expect(managerMock.insert).not.toHaveBeenCalled();
   });
 });

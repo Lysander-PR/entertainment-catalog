@@ -4,6 +4,7 @@ import { AlbumsController } from './albums.controller';
 import { AlbumsService } from './albums.service';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
+import { UpdateAlbumSongsDto } from './dto/update-album-songs.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
 import { Album } from './entities/album.entity';
@@ -43,6 +44,7 @@ describe('AlbumsController', () => {
       remove: jest.fn(),
       reactivate: jest.fn(),
       reactivateSongs: jest.fn(),
+      updateAlbumWithSongs: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -172,5 +174,60 @@ describe('AlbumsController', () => {
 
     expect(service.reactivateSongs).toHaveBeenCalledWith(mockAlbum.id);
     expect(result).toEqual([]);
+  });
+
+  it('should sync the songs of an album', async () => {
+    const updateAlbumSongsDto: UpdateAlbumSongsDto = {
+      songs: [
+        {
+          id: mockSong.id,
+          composer: mockSong.composer,
+          title: mockSong.title,
+          genreId: mockSong.genreId,
+        },
+      ],
+    };
+
+    jest.spyOn(service, 'updateAlbumWithSongs').mockResolvedValue(mockAlbum);
+
+    const result = await controller.updateSongs(
+      mockAlbum.id,
+      updateAlbumSongsDto,
+    );
+
+    expect(service.updateAlbumWithSongs).toHaveBeenCalledWith(
+      mockAlbum.id,
+      updateAlbumSongsDto,
+      undefined,
+    );
+    expect(result).toEqual(mockAlbum);
+  });
+
+  it('should sync the songs of an album along its data and cover', async () => {
+    const updateAlbumSongsDto: UpdateAlbumSongsDto = {
+      studio: 'New Studio',
+      songs: [
+        {
+          composer: mockSong.composer,
+          title: mockSong.title,
+          genreId: mockSong.genreId,
+        },
+      ],
+    };
+
+    jest.spyOn(service, 'updateAlbumWithSongs').mockResolvedValue(mockAlbum);
+
+    const result = await controller.updateSongs(
+      mockAlbum.id,
+      updateAlbumSongsDto,
+      mockFile,
+    );
+
+    expect(service.updateAlbumWithSongs).toHaveBeenCalledWith(
+      mockAlbum.id,
+      updateAlbumSongsDto,
+      mockFile,
+    );
+    expect(result).toEqual(mockAlbum);
   });
 });

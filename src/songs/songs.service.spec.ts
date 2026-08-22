@@ -375,9 +375,7 @@ describe('SongsService', () => {
 
   it('should not create, update or deactivate anything when the payload matches the current tracklist', async () => {
     jest.spyOn(repository, 'find').mockResolvedValue([mockSong]);
-    jest
-      .spyOn(repository, 'create')
-      .mockReturnValue([mockSong] as unknown as Song);
+    jest.spyOn(repository, 'create').mockReturnValue([] as unknown as Song);
 
     await service.syncByAlbumId(mockSong.albumId, [
       {

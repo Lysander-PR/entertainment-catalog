@@ -15,7 +15,8 @@ export function buildToCreate(
 export function buildToUpdate(
   songsInAlbum: Song[],
   songs: SyncSongByAlbumDto[],
-): Partial<Song>[] {
+  songRepository: Repository<Song>,
+): Song[] {
   return songs
     .filter((songDto) => songDto.id)
     .filter((songDto) => {
@@ -25,14 +26,16 @@ export function buildToUpdate(
       }
 
       return (
-        !current ||
         current.composer !== songDto.composer ||
         current.genreId !== songDto.genreId ||
         current.title !== songDto.title ||
         (current.guestArtist && current.guestArtist !== songDto.guestArtist)
       );
     })
-    .map((songDto) => ({ ...songDto }));
+    .map((songDto) => {
+      const current = songsInAlbum.find((song) => song.id === songDto.id);
+      return songRepository.merge(current!, songDto);
+    });
 }
 
 export function buildIdsToDeactivate(

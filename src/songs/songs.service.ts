@@ -141,7 +141,11 @@ export class SongsService extends CacheKey {
 
     const idsToDeactivate = buildIdsToDeactivate(songsInAlbum, songs);
     const songsToCreate = buildToCreate(albumId, songs, this.songRepository);
-    const songsToUpdate = buildToUpdate(songsInAlbum, songs);
+    const songsToUpdate = buildToUpdate(
+      songsInAlbum,
+      songs,
+      this.songRepository,
+    );
 
     await this.dataSource.transaction(async (manager) => {
       if (songsToCreate.length) {

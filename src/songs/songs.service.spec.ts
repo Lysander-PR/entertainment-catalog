@@ -323,6 +323,11 @@ describe('SongsService', () => {
     jest
       .spyOn(repository, 'create')
       .mockReturnValue([newSong] as unknown as Song);
+    jest
+      .spyOn(repository, 'merge')
+      .mockImplementation(
+        (target, ...sources): Song => Object.assign(target, ...sources) as Song,
+      );
 
     const updatedTitle = 'Instant Crush (Remix)';
     const result = await service.syncByAlbumId(mockSong.albumId, [
@@ -359,15 +364,16 @@ describe('SongsService', () => {
       { id: In([songToDeactivate.id]) },
       { active: false },
     );
+    expect(repository.merge).toHaveBeenCalledWith(songToUpdate, {
+      id: songToUpdate.id,
+      composer: songToUpdate.composer,
+      title: updatedTitle,
+      genreId: songToUpdate.genreId,
+    });
     expect(managerMock.update).toHaveBeenCalledWith(
       Song,
       { id: songToUpdate.id },
-      {
-        id: songToUpdate.id,
-        composer: songToUpdate.composer,
-        title: updatedTitle,
-        genreId: songToUpdate.genreId,
-      },
+      songToUpdate,
     );
     expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(result).toEqual([songToKeep, songToUpdate, newSong]);

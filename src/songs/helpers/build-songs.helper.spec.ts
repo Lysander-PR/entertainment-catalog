@@ -80,6 +80,19 @@ describe('build-songs helper', () => {
   });
 
   describe('buildToUpdate', () => {
+    let songRepository: { merge: jest.Mock };
+
+    beforeEach(() => {
+      songRepository = {
+        merge: jest.fn(
+          (target: Song, ...sources: Partial<Song>[]): Song =>
+            Object.assign(target, ...sources) as Song,
+        ),
+      };
+    });
+
+    const repo = () => songRepository as unknown as Repository<Song>;
+
     it('ignores songs without id', () => {
       const songs: SyncSongByAlbumDto[] = [
         {
@@ -89,9 +102,10 @@ describe('build-songs helper', () => {
         },
       ];
 
-      const result = buildToUpdate([songInAlbum], songs);
+      const result = buildToUpdate([{ ...songInAlbum }], songs, repo());
 
       expect(result).toEqual([]);
+      expect(songRepository.merge).not.toHaveBeenCalled();
     });
 
     it('ignores songs whose id is not found in the album', () => {
@@ -104,9 +118,10 @@ describe('build-songs helper', () => {
         },
       ];
 
-      const result = buildToUpdate([songInAlbum], songs);
+      const result = buildToUpdate([{ ...songInAlbum }], songs, repo());
 
       expect(result).toEqual([]);
+      expect(songRepository.merge).not.toHaveBeenCalled();
     });
 
     it('ignores songs that did not change any of the compared fields', () => {
@@ -120,12 +135,14 @@ describe('build-songs helper', () => {
         },
       ];
 
-      const result = buildToUpdate([songInAlbum], songs);
+      const result = buildToUpdate([{ ...songInAlbum }], songs, repo());
 
       expect(result).toEqual([]);
+      expect(songRepository.merge).not.toHaveBeenCalled();
     });
 
-    it('includes songs whose composer, genreId or title changed', () => {
+    it('includes songs whose composer, genreId or title changed, merged onto the current entity', () => {
+      const current = { ...songInAlbum };
       const songs: SyncSongByAlbumDto[] = [
         {
           id: songInAlbum.id,
@@ -135,12 +152,14 @@ describe('build-songs helper', () => {
         },
       ];
 
-      const result = buildToUpdate([songInAlbum], songs);
+      const result = buildToUpdate([current], songs, repo());
 
-      expect(result).toEqual([{ ...songs[0] }]);
+      expect(songRepository.merge).toHaveBeenCalledWith(current, songs[0]);
+      expect(result).toEqual([{ ...current, ...songs[0] }]);
     });
 
     it('includes a song when the guestArtist changes and the current one is set', () => {
+      const current = { ...songInAlbum };
       const songs: SyncSongByAlbumDto[] = [
         {
           id: songInAlbum.id,
@@ -151,9 +170,9 @@ describe('build-songs helper', () => {
         },
       ];
 
-      const result = buildToUpdate([songInAlbum], songs);
+      const result = buildToUpdate([current], songs, repo());
 
-      expect(result).toEqual([{ ...songs[0] }]);
+      expect(result).toEqual([{ ...current, ...songs[0] }]);
     });
 
     it('ignores a guestArtist change when the current song has no guestArtist', () => {
@@ -168,9 +187,29 @@ describe('build-songs helper', () => {
         },
       ];
 
-      const result = buildToUpdate([songWithoutGuest as Song], songs);
+      const result = buildToUpdate([songWithoutGuest as Song], songs, repo());
 
       expect(result).toEqual([]);
+      expect(songRepository.merge).not.toHaveBeenCalled();
+    });
+
+    it('relies on the repository to merge and normalize the song, following the entity patterns', () => {
+      const current = { ...songInAlbum };
+      const songs: SyncSongByAlbumDto[] = [
+        {
+          id: songInAlbum.id,
+          composer: 'THOMAS bangalter',
+          title: 'get LUCKY (remix)',
+          genreId: songInAlbum.genreId,
+          guestArtist: 'pharrell WILLIAMS jr',
+        },
+      ];
+
+      const result = buildToUpdate([current], songs, repo());
+
+      expect(songRepository.merge).toHaveBeenCalledWith(current, songs[0]);
+      expect(result).toEqual([current]);
+      expect(result[0]).toBe(current);
     });
   });
 

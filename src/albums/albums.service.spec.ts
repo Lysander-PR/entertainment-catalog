@@ -226,7 +226,7 @@ describe('AlbumsService', () => {
     expect(coverRepositoryMock.save).toHaveBeenCalledWith({
       file: uploadedPath,
     });
-    expect(albumDraft.coverId).toBe('cover-id');
+    expect(albumDraft.cover).toEqual({ id: 'cover-id' });
   });
 
   it('should return a paginated list of active albums', async () => {
@@ -346,11 +346,14 @@ describe('AlbumsService', () => {
     expect(dataSource.transaction).not.toHaveBeenCalled();
   });
 
-  it('should upload and link a cover file when the album has none on update', async () => {
+  it('should replace the existing cover when a file is provided on update', async () => {
     const file = { originalname: 'cover.jpg' } as Express.Multer.File;
     const uploadedPath = 'albums/new-cover-path';
-    const albumWithoutCover = { ...mockAlbum, coverId: undefined } as Album;
-    const mergedAlbum = { ...albumWithoutCover, ...updateDto } as Album;
+    const albumWithCover = {
+      ...mockAlbum,
+      cover: { id: 'id' } as Cover,
+    } as Album;
+    const mergedAlbum = { ...albumWithCover, ...updateDto } as Album;
     const coverRepositoryMock = {
       save: jest.fn().mockResolvedValue({ id: 'new-cover-id' }),
     };
@@ -358,7 +361,7 @@ describe('AlbumsService', () => {
       find: jest.fn().mockResolvedValue([mockSong]),
     };
 
-    jest.spyOn(repository, 'findOneBy').mockResolvedValue(albumWithoutCover);
+    jest.spyOn(repository, 'findOneBy').mockResolvedValue(albumWithCover);
     jest.spyOn(repository, 'merge').mockReturnValue(mergedAlbum);
     jest
       .spyOn(commonService, 'handleUploadFile')
@@ -375,7 +378,7 @@ describe('AlbumsService', () => {
     expect(coverRepositoryMock.save).toHaveBeenCalledWith({
       file: uploadedPath,
     });
-    expect(mergedAlbum.coverId).toBe('new-cover-id');
+    expect(mergedAlbum.cover).toEqual({ id: 'new-cover-id' });
   });
 
   it('should deactivate an album and its songs, invalidating both cache entries', async () => {

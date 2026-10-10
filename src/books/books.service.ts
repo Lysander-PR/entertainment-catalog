@@ -61,7 +61,7 @@ export class BooksService extends EntertainmentStorage {
             .getRepository(Cover)
             .save({ file: uploadedPath });
 
-          book.coverId = cover.id;
+          book.cover = cover;
         }
 
         return await manager.save(book);
@@ -110,12 +110,12 @@ export class BooksService extends EntertainmentStorage {
     const result = await this.commonService.handleTransactionWithFile(
       uploadedPath,
       this.dataSource.transaction('SERIALIZABLE', async (manager) => {
-        if (uploadedPath && !book.coverId) {
+        if (uploadedPath) {
           const cover = await manager
             .getRepository(Cover)
             .save({ file: uploadedPath });
 
-          bookUpdated.coverId = cover.id;
+          bookUpdated.cover = cover;
         }
 
         return await this.dataSource.manager.save(bookUpdated);

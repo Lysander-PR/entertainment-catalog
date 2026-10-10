@@ -10,6 +10,7 @@ import { DataSource, Not, Repository } from 'typeorm';
 import { Album } from './entities/album.entity';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
+import { UpdateAlbumSongsDto } from './dto/update-album-songs.dto';
 import { capitalize } from '@/common/helpers/capitalize.helper';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
@@ -66,7 +67,7 @@ export class AlbumsService extends EntertainmentStorage {
             .getRepository(Cover)
             .save({ file: uploadedPath });
 
-          album.coverId = cover.id;
+          album.cover = cover;
         }
 
         const albumSaved = await manager.save(album);
@@ -131,12 +132,12 @@ export class AlbumsService extends EntertainmentStorage {
     const result = await this.commonService.handleTransactionWithFile(
       uploadedPath,
       this.dataSource.transaction('SERIALIZABLE', async (manager) => {
-        if (uploadedPath && !album.coverId) {
+        if (uploadedPath) {
           const cover = await manager
             .getRepository(Cover)
             .save({ file: uploadedPath });
 
-          albumUpdated.coverId = cover.id;
+          albumUpdated.cover = cover;
         }
 
         return await manager.save(albumUpdated);
@@ -198,6 +199,25 @@ export class AlbumsService extends EntertainmentStorage {
     await this.cacheService.deleteByPrefix(this.cacheKey);
 
     return songs;
+  }
+
+  async updateAlbumWithSongs(
+    id: string,
+    updateAlbumSongsDto: UpdateAlbumSongsDto,
+    file?: Express.Multer.File,
+  ): Promise<Album> {
+    const { songs, ...updateAlbumDto } = updateAlbumSongsDto;
+
+    if (Object.keys(updateAlbumDto).length > 0 || file) {
+      await this.update(id, updateAlbumDto, file);
+    } else {
+      await this.findOne(id);
+    }
+
+    await this.songsService.syncByAlbumId(id, songs);
+    await this.cacheService.deleteByPrefix(this.cacheKey);
+
+    return this.findOne(id);
   }
 
   private async checkDuplicates({

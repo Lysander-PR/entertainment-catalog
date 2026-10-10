@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { DataSource, In, Not, Repository } from 'typeorm';
 
 import { CreateSongDto } from './dto/create-song.dto';
 import { UpdateSongDto } from './dto/update-song.dto';
@@ -18,6 +18,12 @@ import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-param
 import { SONGS_PATH } from './types/consts/songs.const';
 import { CacheKey } from '@/common/abstracts/cache-key.abstract';
 import { CacheService } from '@/common/cache/cache.service';
+import { SyncSongByAlbumDto } from '@/albums/dto/update-album-songs.dto';
+import {
+  buildIdsToDeactivate,
+  buildToCreate,
+  buildToUpdate,
+} from './helpers/build-songs.helper';
 
 @Injectable()
 export class SongsService extends CacheKey {
@@ -25,6 +31,7 @@ export class SongsService extends CacheKey {
     @InjectRepository(Song)
     private readonly songRepository: Repository<Song>,
     private readonly cacheService: CacheService,
+    private readonly dataSource: DataSource,
   ) {
     super(SONGS_PATH);
   }
@@ -45,6 +52,13 @@ export class SongsService extends CacheKey {
     return paginate(this.songRepository, paginationDto, {
       where: { active: true },
       relations: { album: true, genre: true },
+    });
+  }
+
+  findByAlbum(albumId: string): Promise<Song[]> {
+    return this.songRepository.find({
+      where: { albumId, active: true },
+      relations: { genre: true },
     });
   }
 
@@ -116,6 +130,62 @@ export class SongsService extends CacheKey {
     await this.cacheService.deleteByPrefix(this.cacheKey);
 
     return this.songRepository.findBy({ albumId });
+  }
+
+  async syncByAlbumId(
+    albumId: string,
+    songs: SyncSongByAlbumDto[],
+  ): Promise<Song[]> {
+    this.checkDuplicatesInPayload(albumId, songs);
+    const songsInAlbum = await this.findByAlbum(albumId);
+
+    const idsToDeactivate = buildIdsToDeactivate(songsInAlbum, songs);
+    const songsToCreate = buildToCreate(albumId, songs, this.songRepository);
+    const songsToUpdate = buildToUpdate(
+      songsInAlbum,
+      songs,
+      this.songRepository,
+    );
+
+    await this.dataSource.transaction(async (manager) => {
+      if (songsToCreate.length) {
+        await manager.insert(Song, songsToCreate);
+      }
+
+      if (idsToDeactivate.length) {
+        await manager.update(
+          Song,
+          { id: In(idsToDeactivate) },
+          { active: false },
+        );
+      }
+
+      for (const songLike of songsToUpdate) {
+        await manager.update(Song, { id: songLike.id }, songLike);
+      }
+    });
+
+    await this.cacheService.deleteByPrefix(this.cacheKey);
+    return this.findByAlbum(albumId);
+  }
+
+  private checkDuplicatesInPayload(
+    albumId: string,
+    songs: SyncSongByAlbumDto[],
+  ): void {
+    const titles = new Set<string>();
+
+    for (const { title } of songs) {
+      const song = title.toLocaleLowerCase();
+
+      if (titles.has(song)) {
+        throw new ConflictException(
+          `Song with title ${title} is duplicated in the album with id ${albumId}`,
+        );
+      }
+
+      titles.add(song);
+    }
   }
 
   private async checkDuplicates({

@@ -10,6 +10,7 @@ import { Song } from '@/songs/entities/song.entity';
 import { Album } from '@/albums/entities/album.entity';
 import { CreateAlbumDto } from '@/albums/dto/create-album.dto';
 import { UpdateAlbumDto } from '@/albums/dto/update-album.dto';
+import { UpdateAlbumSongsDto } from '@/albums/dto/update-album-songs.dto';
 import { Genre } from '@/genres/entities/genre.entity';
 import { CreateGenreDto } from '@/genres/dto/create-genre.dto';
 import { Cover } from '@/files/entities/cover.entity';
@@ -499,6 +500,218 @@ describe('Albums (e2e)', () => {
       expect(response.body.message).toContain(
         'property extraField should not exist',
       );
+    });
+  });
+
+  describe('PATCH /api/albums/:id/songs', () => {
+    it('rejects unauthenticated requests', async () => {
+      const payload: UpdateAlbumSongsDto = {
+        songs: [{ composer: 'Composer', title: uniqueWord('Song'), genreId }],
+      };
+
+      const response = await request(app.getHttpServer())
+        .patch(`/api/albums/${albumIds[0]}/songs`)
+        .send(payload)
+        .expect(401);
+
+      expect(typeof response.body.message).toBe('string');
+      expect(response.body.message).toBe('Unauthorized');
+    });
+
+    it('returns 404 for an unknown album id', async () => {
+      const unknownId = '00000000-0000-0000-0000-000000000000';
+      const payload: UpdateAlbumSongsDto = {
+        songs: [{ composer: 'Composer', title: uniqueWord('Song'), genreId }],
+      };
+
+      const response = await request(app.getHttpServer())
+        .patch(`/api/albums/${unknownId}/songs`)
+        .set('Authorization', authHeader)
+        .send(payload)
+        .expect(404);
+
+      expect(typeof response.body.message).toBe('string');
+      expect(response.body.message).toBe(
+        `Album with id ${unknownId} not found`,
+      );
+    });
+
+    it('creates, updates and deactivates songs, keeping the album data untouched', async () => {
+      const payload: CreateAlbumDto = {
+        album: uniqueWord('Album'),
+        studio: 'Studio',
+        releaseDate: new Date('2020-01-01'),
+        artist: 'Artist',
+        songs: [
+          { composer: 'Composer', title: uniqueWord('Song'), genreId },
+          { composer: 'Composer', title: uniqueWord('Song'), genreId },
+        ],
+      };
+
+      const created = await request(app.getHttpServer())
+        .post('/api/albums')
+        .set('Authorization', authHeader)
+        .send(payload)
+        .expect(201);
+      albumIds.push(created.body.id);
+      const [songToUpdate, songToDeactivate] = created.body.songs;
+      songIds.push(songToUpdate.id, songToDeactivate.id);
+
+      const updatedTitle = uniqueWord('Song');
+      const newSongTitle = uniqueWord('Song');
+
+      const response = await request(app.getHttpServer())
+        .patch(`/api/albums/${created.body.id}/songs`)
+        .set('Authorization', authHeader)
+        .send({
+          songs: [
+            {
+              id: songToUpdate.id,
+              composer: songToUpdate.composer,
+              title: updatedTitle,
+              genreId,
+            },
+            { composer: 'Composer', title: newSongTitle, genreId },
+          ],
+        })
+        .expect(200);
+
+      (response.body.songs as { id: string }[]).forEach((song) =>
+        songIds.push(song.id),
+      );
+
+      expectAlbumShape(response.body);
+      expect(response.body.id).toBe(created.body.id);
+      expect(response.body.studio).toBe(capitalize(payload.studio));
+      expect(response.body.songs).toHaveLength(2);
+
+      const titles = (response.body.songs as { title: string }[]).map(
+        (song) => song.title,
+      );
+      expect(titles).toContain(capitalize(updatedTitle));
+      expect(titles).toContain(capitalize(newSongTitle));
+      expect(titles).not.toContain(songToDeactivate.title);
+
+      const deactivatedSong = await dataSource
+        .getRepository(Song)
+        .findOneBy({ id: songToDeactivate.id });
+      expect(deactivatedSong?.active).toBe(false);
+    });
+
+    it('rejects duplicated song titles in the payload', async () => {
+      const payload: CreateAlbumDto = {
+        album: uniqueWord('Album'),
+        studio: 'Studio',
+        releaseDate: new Date('2020-01-01'),
+        artist: 'Artist',
+        songs: [{ composer: 'Composer', title: uniqueWord('Song'), genreId }],
+      };
+
+      const created = await request(app.getHttpServer())
+        .post('/api/albums')
+        .set('Authorization', authHeader)
+        .send(payload)
+        .expect(201);
+      albumIds.push(created.body.id);
+      songIds.push(created.body.songs[0].id);
+
+      const duplicatedTitle = uniqueWord('Song');
+
+      const response = await request(app.getHttpServer())
+        .patch(`/api/albums/${created.body.id}/songs`)
+        .set('Authorization', authHeader)
+        .send({
+          songs: [
+            { composer: 'Composer', title: duplicatedTitle, genreId },
+            {
+              composer: 'Composer',
+              title: duplicatedTitle.toUpperCase(),
+              genreId,
+            },
+          ],
+        })
+        .expect(409);
+
+      expect(typeof response.body.message).toBe('string');
+      expect(response.body.message).toContain('is duplicated in the album');
+    });
+
+    it('accepts a cover image update along with the songs payload', async () => {
+      const payload: CreateAlbumDto = {
+        album: uniqueWord('Album'),
+        studio: 'Studio',
+        releaseDate: new Date('2020-01-01'),
+        artist: 'Artist',
+        songs: [{ composer: 'Composer', title: uniqueWord('Song'), genreId }],
+      };
+
+      const created = await request(app.getHttpServer())
+        .post('/api/albums')
+        .set('Authorization', authHeader)
+        .send(payload)
+        .expect(201);
+      albumIds.push(created.body.id);
+      songIds.push(created.body.songs[0].id);
+
+      const newSongTitle = uniqueWord('Song');
+
+      const response = await request(app.getHttpServer())
+        .patch(`/api/albums/${created.body.id}/songs`)
+        .set('Authorization', authHeader)
+        .field(
+          'songs',
+          JSON.stringify([
+            { composer: 'Composer', title: newSongTitle, genreId },
+          ]),
+        )
+        .attach('cover', Buffer.from([0xff, 0xd8, 0xff]), {
+          filename: 'cover.jpg',
+          contentType: 'image/jpeg',
+        })
+        .expect(200);
+
+      albumIds.push(response.body.id);
+      coverIds.push(response.body.coverId);
+      expectAlbumShape(response.body);
+      expect(response.body.coverId).toBeDefined();
+      expect(isUUID(response.body.coverId)).toBe(true);
+      expect(response.body.songs).toHaveLength(1);
+      songIds.push(response.body.songs[0].id);
+    });
+  });
+
+  describe('PATCH /api/albums/:id/songs (DTO validation)', () => {
+    it('rejects an empty songs array', async () => {
+      const response = await request(app.getHttpServer())
+        .patch(`/api/albums/${albumIds[0]}/songs`)
+        .set('Authorization', authHeader)
+        .send({ songs: [] })
+        .expect(400);
+
+      expect(response.body.message).toBeInstanceOf(Array);
+      expect(response.body.message).toContain(
+        'songs must contain at least 1 elements',
+      );
+    });
+
+    it('rejects a song id that is not a uuid', async () => {
+      const response = await request(app.getHttpServer())
+        .patch(`/api/albums/${albumIds[0]}/songs`)
+        .set('Authorization', authHeader)
+        .send({
+          songs: [
+            {
+              id: 'not-a-uuid',
+              composer: 'Composer',
+              title: uniqueWord('Song'),
+              genreId,
+            },
+          ],
+        })
+        .expect(400);
+
+      expect(response.body.message).toBeInstanceOf(Array);
+      expect(response.body.message).toContain('songs.0.id must be a UUID');
     });
   });
 

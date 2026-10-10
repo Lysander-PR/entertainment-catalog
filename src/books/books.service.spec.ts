@@ -169,7 +169,7 @@ describe('BooksService', () => {
     expect(coverRepositoryMock.save).toHaveBeenCalledWith({
       file: uploadedPath,
     });
-    expect(bookDraft.coverId).toBe('cover-id');
+    expect(bookDraft.cover).toEqual({ id: 'cover-id' });
     expect(result).toEqual(bookDraft);
   });
 
@@ -256,16 +256,19 @@ describe('BooksService', () => {
     expect(dataSource.transaction).not.toHaveBeenCalled();
   });
 
-  it('should upload and link a cover file when the book has none on update', async () => {
+  it('should replace the existing cover when a file is provided on update', async () => {
     const file = { originalname: 'cover.jpg' } as Express.Multer.File;
     const uploadedPath = 'books/new-cover-path';
-    const bookWithoutCover = { ...mockBook, coverId: undefined } as Book;
-    const mergedBook = { ...bookWithoutCover, ...updateDto } as Book;
+    const bookWithCover = {
+      ...mockBook,
+      cover: { id: 'id' } as Cover,
+    } as Book;
+    const mergedBook = { ...bookWithCover, ...updateDto } as Book;
     const coverRepositoryMock = {
       save: jest.fn().mockResolvedValue({ id: 'new-cover-id' }),
     };
 
-    jest.spyOn(repository, 'findOneBy').mockResolvedValue(bookWithoutCover);
+    jest.spyOn(repository, 'findOneBy').mockResolvedValue(bookWithCover);
     jest.spyOn(repository, 'merge').mockReturnValue(mergedBook);
     jest
       .spyOn(commonService, 'handleUploadFile')
@@ -281,7 +284,7 @@ describe('BooksService', () => {
     expect(coverRepositoryMock.save).toHaveBeenCalledWith({
       file: uploadedPath,
     });
-    expect(mergedBook.coverId).toBe('new-cover-id');
+    expect(mergedBook.cover).toEqual({ id: 'new-cover-id' });
   });
 
   it('should desactivate a book and invalidate both cache entries', async () => {

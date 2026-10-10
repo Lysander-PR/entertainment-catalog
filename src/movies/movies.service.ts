@@ -63,7 +63,7 @@ export class MoviesService extends EntertainmentStorage {
             .getRepository(Cover)
             .save({ file: uploadedPath });
 
-          movie.posterId = cover.id;
+          movie.poster = cover;
         }
 
         return await manager.save(movie);
@@ -118,12 +118,12 @@ export class MoviesService extends EntertainmentStorage {
     const result = await this.commonService.handleTransactionWithFile(
       uploadedPath,
       this.dataSource.transaction('SERIALIZABLE', async (manager) => {
-        if (uploadedPath && !movie.posterId) {
+        if (uploadedPath) {
           const cover = await manager
             .getRepository(Cover)
             .save({ file: uploadedPath });
 
-          movieUpdated.posterId = cover.id;
+          movieUpdated.poster = cover;
         }
 
         await manager.update(Movie, { id }, movieUpdated);

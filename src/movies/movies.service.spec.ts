@@ -188,7 +188,7 @@ describe('MoviesService', () => {
     expect(coverRepositoryMock.save).toHaveBeenCalledWith({
       file: uploadedPath,
     });
-    expect(movieDraft.posterId).toBe('cover-id');
+    expect(movieDraft.poster).toEqual({ id: 'cover-id' });
     expect(result).toEqual(movieDraft);
   });
 
@@ -281,16 +281,19 @@ describe('MoviesService', () => {
     expect(dataSource.transaction).not.toHaveBeenCalled();
   });
 
-  it('should upload and link a cover file when the movie has none on update', async () => {
+  it('should replace the existing poster when a file is provided on update', async () => {
     const file = { originalname: 'cover.jpg' } as Express.Multer.File;
     const uploadedPath = 'movies/new-cover-path';
-    const movieWithoutPoster = { ...mockMovie, posterId: undefined } as Movie;
-    const mergedMovie = { ...movieWithoutPoster, ...updateDto } as Movie;
+    const movieWithPoster = {
+      ...mockMovie,
+      poster: { id: 'id' } as Cover,
+    } as Movie;
+    const mergedMovie = { ...movieWithPoster, ...updateDto } as Movie;
     const coverRepositoryMock = {
       save: jest.fn().mockResolvedValue({ id: 'new-poster-id' }),
     };
 
-    jest.spyOn(repository, 'findOneBy').mockResolvedValue(movieWithoutPoster);
+    jest.spyOn(repository, 'findOneBy').mockResolvedValue(movieWithPoster);
     jest.spyOn(repository, 'merge').mockReturnValue(mergedMovie);
     jest
       .spyOn(commonService, 'handleUploadFile')
@@ -304,7 +307,7 @@ describe('MoviesService', () => {
     expect(coverRepositoryMock.save).toHaveBeenCalledWith({
       file: uploadedPath,
     });
-    expect(mergedMovie.posterId).toBe('new-poster-id');
+    expect(mergedMovie.poster).toEqual({ id: 'new-poster-id' });
   });
 
   it('should deactivate a movie and invalidate both cache entries', async () => {

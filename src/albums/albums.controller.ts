@@ -21,6 +21,7 @@ import { QueryFailedErrorFilter } from '@/common/filters/query-failed.filter';
 import { UpdateValuesMissingErrorFilter } from '@/common/filters/update-values-missing.error.filter';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
+import { UpdateAlbumSongsDto } from './dto/update-album-songs.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import { StorageApiFilter } from '@/files/filters/storage-api.filter';
 import { Album } from './entities/album.entity';
@@ -252,6 +253,26 @@ export class AlbumsController {
     file?: Express.Multer.File,
   ) {
     return this.albumsService.update(id, updateAlbumDto, file);
+  }
+
+  @Patch(`:id/${SONGS_PATH}`)
+  @UseInterceptors(FileInterceptor('cover'))
+  updateSongs(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateAlbumSongsDto: UpdateAlbumSongsDto,
+    @UploadedFile(
+      new FileValidationPipe({
+        allowedMimeTypes: [MimeTypes.JPEG, MimeTypes.PNG],
+        required: false,
+      }),
+    )
+    file?: Express.Multer.File,
+  ) {
+    return this.albumsService.updateAlbumWithSongs(
+      id,
+      updateAlbumSongsDto,
+      file,
+    );
   }
 
   @Delete(':id')

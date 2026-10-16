@@ -212,7 +212,7 @@ export class AlbumsService extends EntertainmentStorage {
     await this.songsService.syncByAlbumId(id, songs);
     await this.cacheService.deleteByPrefix(this.cacheKey);
 
-    return this.findOne(id);
+    return this.findOneWithSongs(id, { includeInactive: false });
   }
 
   async findOneWithSongs(

@@ -572,7 +572,10 @@ describe('AlbumsService', () => {
     await service.updateAlbumWithSongs(mockAlbum.id, { songs: songsInput });
 
     expect(service.update).not.toHaveBeenCalled();
-    expect(songsService.findByAlbum).not.toHaveBeenCalled();
+    expect(songsService.findByAlbum).toHaveBeenCalledTimes(1);
+    expect(songsService.findByAlbum).toHaveBeenCalledWith(mockAlbum.id, {
+      includeInactive: false,
+    });
     expect(songsService.syncByAlbumId).toHaveBeenCalledWith(
       mockAlbum.id,
       songsInput,

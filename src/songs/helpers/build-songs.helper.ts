@@ -32,10 +32,7 @@ export function buildToUpdate(
         (current.guestArtist && current.guestArtist !== songDto.guestArtist)
       );
     })
-    .map((songDto) => {
-      const current = songsInAlbum.find((song) => song.id === songDto.id);
-      return songRepository.merge(current!, songDto);
-    });
+    .map(({ id, ...changes }) => songRepository.create({ id, ...changes }));
 }
 
 export function buildIdsToDeactivate(

@@ -25,6 +25,7 @@ import { ALBUMS_PATH } from './types/consts/albums.const';
 import { EntertainmentStorage } from '@/common/abstracts/entertainment-storage.abstract';
 import { CacheService } from '@/common/cache/cache.service';
 import { SongsService } from '@/songs/songs.service';
+import { FindByAlbumOptions } from '@/songs/types/interfaces/find-by-album-options.interface';
 
 @Injectable()
 export class AlbumsService extends EntertainmentStorage {
@@ -99,11 +100,6 @@ export class AlbumsService extends EntertainmentStorage {
       throw new NotFoundException(`Album with id ${id} not found`);
     }
 
-    album.songs = await this.dataSource.getRepository(Song).find({
-      where: { albumId: id, active: true },
-      relations: { genre: true },
-    });
-
     return album;
   }
 
@@ -112,7 +108,7 @@ export class AlbumsService extends EntertainmentStorage {
     updateAlbumDto: UpdateAlbumDto,
     file?: Express.Multer.File,
   ): Promise<Album> {
-    const album = await this.findOne(id);
+    const album = await this.findOneWithSongs(id, { includeInactive: true }); // Necesary because the save method throws an error in the "album_id" column if the album contains inactive songs
     const artist = updateAlbumDto.artist || album.artist;
     const description = updateAlbumDto.album || album.album;
 
@@ -124,10 +120,7 @@ export class AlbumsService extends EntertainmentStorage {
       this.storagePath({ album: description, artist }),
       file,
     );
-    const albumUpdated = this.albumRepository.merge(album, {
-      ...updateAlbumDto,
-      songs: album.songs,
-    });
+    const albumUpdated = this.albumRepository.merge(album, updateAlbumDto);
 
     const result = await this.commonService.handleTransactionWithFile(
       uploadedPath,
@@ -144,12 +137,14 @@ export class AlbumsService extends EntertainmentStorage {
       }),
     );
 
+    result.songs = result.songs.filter((song) => song.active);
+
     await this.cacheService.deleteByPrefix(this.cacheKey);
     return result;
   }
 
   async remove(id: string): Promise<Album> {
-    const album = await this.findOne(id);
+    const album = await this.findOneWithSongs(id, { includeInactive: false });
 
     const result = await this.albumRepository.update({ id }, { active: false });
     if (result.affected === 0) {
@@ -218,6 +213,15 @@ export class AlbumsService extends EntertainmentStorage {
     await this.cacheService.deleteByPrefix(this.cacheKey);
 
     return this.findOne(id);
+  }
+
+  async findOneWithSongs(
+    id: string,
+    options: FindByAlbumOptions,
+  ): Promise<Album> {
+    const album = await this.findOne(id);
+    album.songs = await this.songsService.findByAlbum(id, options);
+    return album;
   }
 
   private async checkDuplicates({

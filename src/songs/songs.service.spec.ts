@@ -150,6 +150,29 @@ describe('SongsService', () => {
     );
   });
 
+  it('should return only the active songs of an album by default', async () => {
+    jest.spyOn(repository, 'find').mockResolvedValue([mockSong]);
+
+    const result = await service.findByAlbum(mockSong.albumId);
+
+    expect(repository.find).toHaveBeenCalledWith({
+      where: { albumId: mockSong.albumId, active: true },
+      relations: { genre: true },
+    });
+    expect(result).toEqual([mockSong]);
+  });
+
+  it('should return every song of an album when inactive songs are included', async () => {
+    jest.spyOn(repository, 'find').mockResolvedValue([mockSong]);
+
+    await service.findByAlbum(mockSong.albumId, { includeInactive: true });
+
+    expect(repository.find).toHaveBeenCalledWith({
+      where: { albumId: mockSong.albumId },
+      relations: { genre: true },
+    });
+  });
+
   it('should update a song and invalidate both cache entries', async () => {
     const updateDto: UpdateSongDto = { guestArtist: 'Pharrell Williams' };
     const mergedSong = { ...mockSong, ...updateDto } as Song;

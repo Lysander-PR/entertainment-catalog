@@ -39,7 +39,7 @@ describe('AlbumsController', () => {
     const serviceMock = {
       create: jest.fn(),
       find: jest.fn(),
-      findOne: jest.fn(),
+      findOneWithSongs: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
       reactivate: jest.fn(),
@@ -120,11 +120,13 @@ describe('AlbumsController', () => {
   });
 
   it('should return an album by id', async () => {
-    jest.spyOn(service, 'findOne').mockResolvedValue(mockAlbum);
+    jest.spyOn(service, 'findOneWithSongs').mockResolvedValue(mockAlbum);
 
     const result = await controller.findOne(mockAlbum.id);
 
-    expect(service.findOne).toHaveBeenCalledWith(mockAlbum.id);
+    expect(service.findOneWithSongs).toHaveBeenCalledWith(mockAlbum.id, {
+      includeInactive: false,
+    });
     expect(result).toEqual(mockAlbum);
   });
 

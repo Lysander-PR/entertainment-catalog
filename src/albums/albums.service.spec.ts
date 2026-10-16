@@ -33,6 +33,7 @@ describe('AlbumsService', () => {
   let dataSource: DataSource;
   let cacheService: { deleteByPrefix: jest.Mock };
   let songsService: {
+    findByAlbum: jest.Mock;
     reactivateByAlbumId: jest.Mock;
     syncByAlbumId: jest.Mock;
   };
@@ -113,6 +114,7 @@ describe('AlbumsService', () => {
     const cacheServiceMock = { deleteByPrefix: jest.fn() };
 
     const songsServiceMock = {
+      findByAlbum: jest.fn().mockResolvedValue([mockSong]),
       reactivateByAlbumId: jest.fn(),
       syncByAlbumId: jest.fn(),
     };
@@ -244,15 +246,8 @@ describe('AlbumsService', () => {
     expect(result).toEqual(new PaginationResponseDto([mockAlbum], 11, 2, 5));
   });
 
-  it('should return an album by id with its active songs and their genre', async () => {
-    const songRepositoryMock = {
-      find: jest.fn().mockResolvedValue([mockSong]),
-    };
-
+  it('should return an active album by id without loading its songs', async () => {
     jest.spyOn(repository, 'findOneBy').mockResolvedValue(mockAlbum);
-    jest
-      .spyOn(dataSource, 'getRepository')
-      .mockReturnValue(songRepositoryMock as unknown as Repository<Song>);
 
     const result = await service.findOne(mockAlbum.id);
 
@@ -260,11 +255,7 @@ describe('AlbumsService', () => {
       id: mockAlbum.id,
       active: true,
     });
-    expect(dataSource.getRepository).toHaveBeenCalledWith(Song);
-    expect(songRepositoryMock.find).toHaveBeenCalledWith({
-      where: { albumId: mockAlbum.id, active: true },
-      relations: { genre: true },
-    });
+    expect(songsService.findByAlbum).not.toHaveBeenCalled();
     expect(result).toEqual(mockAlbum);
   });
 
@@ -276,46 +267,100 @@ describe('AlbumsService', () => {
     );
   });
 
+  it('should return an album with the songs returned by the songs service', async () => {
+    const album = { ...mockAlbum, songs: undefined } as unknown as Album;
+
+    jest.spyOn(repository, 'findOneBy').mockResolvedValue(album);
+
+    const result = await service.findOneWithSongs(mockAlbum.id, {
+      includeInactive: false,
+    });
+
+    expect(repository.findOneBy).toHaveBeenCalledWith({
+      id: mockAlbum.id,
+      active: true,
+    });
+    expect(songsService.findByAlbum).toHaveBeenCalledWith(mockAlbum.id, {
+      includeInactive: false,
+    });
+    expect(result.songs).toEqual([mockSong]);
+  });
+
+  it('should forward includeInactive to the songs service', async () => {
+    jest
+      .spyOn(repository, 'findOneBy')
+      .mockResolvedValue({ ...mockAlbum } as Album);
+
+    await service.findOneWithSongs(mockAlbum.id, { includeInactive: true });
+
+    expect(songsService.findByAlbum).toHaveBeenCalledWith(mockAlbum.id, {
+      includeInactive: true,
+    });
+  });
+
+  it('should throw NotFoundException from findOneWithSongs without loading songs', async () => {
+    jest.spyOn(repository, 'findOneBy').mockResolvedValue(null);
+
+    await expect(
+      service.findOneWithSongs(mockAlbum.id, { includeInactive: false }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(songsService.findByAlbum).not.toHaveBeenCalled();
+  });
+
   it('should update an album and invalidate both cache entries', async () => {
     const mergedAlbum = { ...mockAlbum, ...updateDto } as Album;
-    const songRepositoryMock = {
-      find: jest.fn().mockResolvedValue([mockSong]),
-    };
-
     jest.spyOn(repository, 'findOneBy').mockResolvedValue(mockAlbum);
     jest.spyOn(repository, 'merge').mockReturnValue(mergedAlbum);
     jest.spyOn(commonService, 'handleUploadFile').mockResolvedValue(null);
-    jest
-      .spyOn(dataSource, 'getRepository')
-      .mockReturnValue(songRepositoryMock as unknown as Repository<Song>);
     managerMock.save.mockResolvedValue(mergedAlbum);
 
     const result = await service.update(mockAlbum.id, updateDto);
 
-    expect(repository.existsBy).not.toHaveBeenCalled();
-    expect(repository.merge).toHaveBeenCalledWith(mockAlbum, {
-      ...updateDto,
-      songs: mockAlbum.songs,
+    expect(songsService.findByAlbum).toHaveBeenCalledWith(mockAlbum.id, {
+      includeInactive: true,
     });
+    expect(repository.existsBy).not.toHaveBeenCalled();
+    expect(repository.merge).toHaveBeenCalledWith(mockAlbum, updateDto);
     expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(managerMock.save).toHaveBeenCalledWith(mergedAlbum);
     expect(result).toEqual(mergedAlbum);
   });
 
+  it('should save the album with every song but return only the active ones on update', async () => {
+    const inactiveSong = {
+      ...mockSong,
+      id: 'inactive-id',
+      active: false,
+    } as Song;
+    const allSongs = [mockSong, inactiveSong];
+
+    jest
+      .spyOn(repository, 'findOneBy')
+      .mockResolvedValue({ ...mockAlbum } as Album);
+    jest
+      .spyOn(repository, 'merge')
+      .mockImplementation((album, dto) => Object.assign(album, dto));
+    jest.spyOn(commonService, 'handleUploadFile').mockResolvedValue(null);
+    songsService.findByAlbum.mockResolvedValue(allSongs);
+    managerMock.save.mockImplementation((album: Album) =>
+      Promise.resolve({ ...album, songs: [...album.songs] }),
+    );
+
+    const result = await service.update(mockAlbum.id, updateDto);
+
+    expect(managerMock.save).toHaveBeenCalledWith(
+      expect.objectContaining({ songs: allSongs }),
+    );
+    expect(result.songs).toEqual([mockSong]);
+  });
+
   it('should check duplicates when the album title or artist changes', async () => {
     const albumDto: UpdateAlbumDto = { album: 'Random Access Memories 2' };
     const mergedAlbum = { ...mockAlbum, ...albumDto } as Album;
-    const songRepositoryMock = {
-      find: jest.fn().mockResolvedValue([mockSong]),
-    };
-
     jest.spyOn(repository, 'findOneBy').mockResolvedValue(mockAlbum);
     jest.spyOn(repository, 'existsBy').mockResolvedValue(false);
     jest.spyOn(repository, 'merge').mockReturnValue(mergedAlbum);
     jest.spyOn(commonService, 'handleUploadFile').mockResolvedValue(null);
-    jest
-      .spyOn(dataSource, 'getRepository')
-      .mockReturnValue(songRepositoryMock as unknown as Repository<Song>);
     managerMock.save.mockResolvedValue(mergedAlbum);
 
     await service.update(mockAlbum.id, albumDto);
@@ -329,15 +374,8 @@ describe('AlbumsService', () => {
 
   it('should throw ConflictException if the updated album/artist belongs to another album', async () => {
     const albumDto: UpdateAlbumDto = { album: 'Duplicate Album' };
-    const songRepositoryMock = {
-      find: jest.fn().mockResolvedValue([mockSong]),
-    };
-
     jest.spyOn(repository, 'findOneBy').mockResolvedValue(mockAlbum);
     jest.spyOn(repository, 'existsBy').mockResolvedValue(true);
-    jest
-      .spyOn(dataSource, 'getRepository')
-      .mockReturnValue(songRepositoryMock as unknown as Repository<Song>);
 
     await expect(service.update(mockAlbum.id, albumDto)).rejects.toBeInstanceOf(
       ConflictException,
@@ -357,18 +395,11 @@ describe('AlbumsService', () => {
     const coverRepositoryMock = {
       save: jest.fn().mockResolvedValue({ id: 'new-cover-id' }),
     };
-    const songRepositoryMock = {
-      find: jest.fn().mockResolvedValue([mockSong]),
-    };
-
     jest.spyOn(repository, 'findOneBy').mockResolvedValue(albumWithCover);
     jest.spyOn(repository, 'merge').mockReturnValue(mergedAlbum);
     jest
       .spyOn(commonService, 'handleUploadFile')
       .mockResolvedValue(uploadedPath);
-    jest
-      .spyOn(dataSource, 'getRepository')
-      .mockReturnValue(songRepositoryMock as unknown as Repository<Song>);
     managerMock.getRepository.mockReturnValue(coverRepositoryMock);
     managerMock.save.mockImplementation((album) => Promise.resolve(album));
 
@@ -383,7 +414,6 @@ describe('AlbumsService', () => {
 
   it('should deactivate an album and its songs, invalidating both cache entries', async () => {
     const songRepositoryMock = {
-      find: jest.fn().mockResolvedValue([mockSong]),
       update: jest.fn().mockResolvedValue({ affected: 1 } as UpdateResult),
     };
 
@@ -397,6 +427,9 @@ describe('AlbumsService', () => {
 
     const result = await service.remove(mockAlbum.id);
 
+    expect(songsService.findByAlbum).toHaveBeenCalledWith(mockAlbum.id, {
+      includeInactive: false,
+    });
     expect(repository.update).toHaveBeenCalledWith(
       { id: mockAlbum.id },
       { active: false },
@@ -411,22 +444,15 @@ describe('AlbumsService', () => {
   });
 
   it('should throw InternalServerErrorException if no rows were affected while removing', async () => {
-    const songRepositoryMock = {
-      find: jest.fn().mockResolvedValue([mockSong]),
-    };
-
     jest.spyOn(repository, 'findOneBy').mockResolvedValue(mockAlbum);
     jest
       .spyOn(repository, 'update')
       .mockResolvedValue({ affected: 0 } as UpdateResult);
-    jest
-      .spyOn(dataSource, 'getRepository')
-      .mockReturnValue(songRepositoryMock as unknown as Repository<Song>);
 
     await expect(service.remove(mockAlbum.id)).rejects.toBeInstanceOf(
       InternalServerErrorException,
     );
-    expect(dataSource.getRepository).toHaveBeenCalledTimes(1);
+    expect(dataSource.getRepository).not.toHaveBeenCalled();
   });
 
   it('should reactivate an album and its songs and invalidate the cache prefix', async () => {
@@ -512,14 +538,7 @@ describe('AlbumsService', () => {
         genreId: mockSong.genreId,
       },
     ];
-    const songRepositoryMock = {
-      find: jest.fn().mockResolvedValue([mockSong]),
-    };
-
     jest.spyOn(repository, 'findOneBy').mockResolvedValue(mockAlbum);
-    jest
-      .spyOn(dataSource, 'getRepository')
-      .mockReturnValue(songRepositoryMock as unknown as Repository<Song>);
     songsService.syncByAlbumId.mockResolvedValue([mockSong]);
 
     const result = await service.updateAlbumWithSongs(mockAlbum.id, {
@@ -546,20 +565,17 @@ describe('AlbumsService', () => {
   });
 
   it('should not update the album data when only songs are sent', async () => {
-    const songRepositoryMock = {
-      find: jest.fn().mockResolvedValue([mockSong]),
-    };
-
     jest.spyOn(repository, 'findOneBy').mockResolvedValue(mockAlbum);
-    jest
-      .spyOn(dataSource, 'getRepository')
-      .mockReturnValue(songRepositoryMock as unknown as Repository<Song>);
     jest.spyOn(service, 'update');
     songsService.syncByAlbumId.mockResolvedValue([mockSong]);
 
     await service.updateAlbumWithSongs(mockAlbum.id, { songs: songsInput });
 
     expect(service.update).not.toHaveBeenCalled();
+    expect(songsService.findByAlbum).toHaveBeenCalledTimes(1);
+    expect(songsService.findByAlbum).toHaveBeenCalledWith(mockAlbum.id, {
+      includeInactive: false,
+    });
     expect(songsService.syncByAlbumId).toHaveBeenCalledWith(
       mockAlbum.id,
       songsInput,
@@ -567,14 +583,7 @@ describe('AlbumsService', () => {
   });
 
   it('should also update the album data when album fields are sent', async () => {
-    const songRepositoryMock = {
-      find: jest.fn().mockResolvedValue([mockSong]),
-    };
-
     jest.spyOn(repository, 'findOneBy').mockResolvedValue(mockAlbum);
-    jest
-      .spyOn(dataSource, 'getRepository')
-      .mockReturnValue(songRepositoryMock as unknown as Repository<Song>);
     jest.spyOn(service, 'update').mockResolvedValue(mockAlbum);
     songsService.syncByAlbumId.mockResolvedValue([mockSong]);
 
@@ -596,14 +605,7 @@ describe('AlbumsService', () => {
   });
 
   it('should update the album cover when only a file is sent along the songs', async () => {
-    const songRepositoryMock = {
-      find: jest.fn().mockResolvedValue([mockSong]),
-    };
-
     jest.spyOn(repository, 'findOneBy').mockResolvedValue(mockAlbum);
-    jest
-      .spyOn(dataSource, 'getRepository')
-      .mockReturnValue(songRepositoryMock as unknown as Repository<Song>);
     jest.spyOn(service, 'update').mockResolvedValue(mockAlbum);
     songsService.syncByAlbumId.mockResolvedValue([mockSong]);
 

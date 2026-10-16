@@ -150,6 +150,29 @@ describe('SongsService', () => {
     );
   });
 
+  it('should return only the active songs of an album by default', async () => {
+    jest.spyOn(repository, 'find').mockResolvedValue([mockSong]);
+
+    const result = await service.findByAlbum(mockSong.albumId);
+
+    expect(repository.find).toHaveBeenCalledWith({
+      where: { albumId: mockSong.albumId, active: true },
+      relations: { genre: true },
+    });
+    expect(result).toEqual([mockSong]);
+  });
+
+  it('should return every song of an album when inactive songs are included', async () => {
+    jest.spyOn(repository, 'find').mockResolvedValue([mockSong]);
+
+    await service.findByAlbum(mockSong.albumId, { includeInactive: true });
+
+    expect(repository.find).toHaveBeenCalledWith({
+      where: { albumId: mockSong.albumId },
+      relations: { genre: true },
+    });
+  });
+
   it('should update a song and invalidate both cache entries', async () => {
     const updateDto: UpdateSongDto = { guestArtist: 'Pharrell Williams' };
     const mergedSong = { ...mockSong, ...updateDto } as Song;
@@ -322,11 +345,9 @@ describe('SongsService', () => {
       .mockResolvedValueOnce([songToKeep, songToUpdate, newSong]);
     jest
       .spyOn(repository, 'create')
-      .mockReturnValue([newSong] as unknown as Song);
-    jest
-      .spyOn(repository, 'merge')
       .mockImplementation(
-        (target, ...sources): Song => Object.assign(target, ...sources) as Song,
+        (data?: unknown): Song =>
+          (Array.isArray(data) ? [newSong] : { ...(data as Song) }) as Song,
       );
 
     const updatedTitle = 'Instant Crush (Remix)';
@@ -364,16 +385,15 @@ describe('SongsService', () => {
       { id: In([songToDeactivate.id]) },
       { active: false },
     );
-    expect(repository.merge).toHaveBeenCalledWith(songToUpdate, {
-      id: songToUpdate.id,
-      composer: songToUpdate.composer,
-      title: updatedTitle,
-      genreId: songToUpdate.genreId,
-    });
     expect(managerMock.update).toHaveBeenCalledWith(
       Song,
       { id: songToUpdate.id },
-      songToUpdate,
+      {
+        id: songToUpdate.id,
+        composer: songToUpdate.composer,
+        title: updatedTitle,
+        genreId: songToUpdate.genreId,
+      },
     );
     expect(cacheService.deleteByPrefix).toHaveBeenCalledWith(cacheKey);
     expect(result).toEqual([songToKeep, songToUpdate, newSong]);

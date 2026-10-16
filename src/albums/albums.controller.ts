@@ -198,7 +198,7 @@ export class AlbumsController {
   @ApiBadRequestResponse({ description: 'Invalid UUID format' })
   @Public()
   findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.albumsService.findOne(id);
+    return this.albumsService.findOneWithSongs(id, { includeInactive: false });
   }
 
   @Patch(':id')

@@ -15,6 +15,7 @@ import { PaginationDto } from '@/common/dto/pagination.dto';
 import { PaginationResponseDto } from '@/common/dto/pagination-response.dto';
 import { paginate } from '@/common/helpers/paginate.helper';
 import { CheckDuplicatesParams } from './types/interfaces/check-duplicates-params.interface';
+import { FindByAlbumOptions } from './types/interfaces/find-by-album-options.interface';
 import { SONGS_PATH } from './types/consts/songs.const';
 import { CacheKey } from '@/common/abstracts/cache-key.abstract';
 import { CacheService } from '@/common/cache/cache.service';
@@ -55,9 +56,12 @@ export class SongsService extends CacheKey {
     });
   }
 
-  findByAlbum(albumId: string): Promise<Song[]> {
+  findByAlbum(
+    albumId: string,
+    { includeInactive = false }: FindByAlbumOptions = {},
+  ): Promise<Song[]> {
     return this.songRepository.find({
-      where: { albumId, active: true },
+      where: { albumId, ...(includeInactive ? {} : { active: true }) },
       relations: { genre: true },
     });
   }

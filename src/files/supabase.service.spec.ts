@@ -21,6 +21,7 @@ describe('SupabaseService', () => {
   let uploadMock: jest.Mock;
   let removeMock: jest.Mock;
   let downloadMock: jest.Mock;
+  let listMock: jest.Mock;
 
   const mockFile = {
     originalname: 'cover.jpg',
@@ -32,10 +33,12 @@ describe('SupabaseService', () => {
     uploadMock = jest.fn();
     removeMock = jest.fn();
     downloadMock = jest.fn();
+    listMock = jest.fn();
     fromMock = jest.fn().mockReturnValue({
       upload: uploadMock,
       remove: removeMock,
       download: downloadMock,
+      list: listMock,
     });
 
     jest.mocked(createClient).mockReturnValue({
@@ -121,5 +124,21 @@ describe('SupabaseService', () => {
     downloadMock.mockResolvedValue({ data: null, error });
 
     await expect(service.getFile('covers/cover.jpg')).rejects.toBe(error);
+  });
+
+  it('should list at most one file from the configured bucket to verify the connection', async () => {
+    listMock.mockResolvedValue({ data: [], error: null });
+
+    await expect(service.ping()).resolves.toBeUndefined();
+
+    expect(fromMock).toHaveBeenCalledWith('test-bucket');
+    expect(listMock).toHaveBeenCalledWith('', { limit: 1 });
+  });
+
+  it('should propagate the error when Supabase Storage does not respond correctly', async () => {
+    const error = new Error('Bucket not found');
+    listMock.mockResolvedValue({ data: null, error });
+
+    await expect(service.ping()).rejects.toBe(error);
   });
 });

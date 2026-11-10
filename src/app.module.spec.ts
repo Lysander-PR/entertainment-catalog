@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { MODULE_METADATA } from '@nestjs/common/constants';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
+import { CacheModule } from '@nestjs/cache-manager';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 jest.mock('@/config/envs', () => ({
@@ -34,6 +34,8 @@ import { SeedModule } from './seed/seed.module';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { HttpLoggerMiddleware } from './common/middleware/http-logger.middleware';
+import { HttpCacheInterceptor } from './common/interceptors/http-cache.interceptor';
+import { HealthModule } from './health/health.module';
 
 describe('AppModule', () => {
   const imports = Reflect.getMetadata(MODULE_METADATA.IMPORTS, AppModule);
@@ -83,6 +85,10 @@ describe('AppModule', () => {
     expect(imports).toContain(AuthModule);
   });
 
+  it('should import HealthModule', () => {
+    expect(imports).toContain(HealthModule);
+  });
+
   it('should import TypeOrmModule for the database connection', () => {
     const typeOrmImport = imports.find((item) => item.module === TypeOrmModule);
 
@@ -96,10 +102,10 @@ describe('AppModule', () => {
     expect(cacheImport.global).toBe(true);
   });
 
-  it('should register CacheInterceptor as the global interceptor', () => {
+  it('should register HttpCacheInterceptor as a global interceptor', () => {
     expect(providers).toContainEqual({
       provide: APP_INTERCEPTOR,
-      useClass: CacheInterceptor,
+      useClass: HttpCacheInterceptor,
     });
   });
 

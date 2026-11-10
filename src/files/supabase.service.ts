@@ -41,6 +41,14 @@ export class SupabaseService implements IStorageService {
     return this.unwrap(response);
   }
 
+  async ping(): Promise<void> {
+    const response = await this.supabase.storage
+      .from(this.bucketName)
+      .list('', { limit: 1 });
+
+    this.unwrap(response);
+  }
+
   private unwrap<T>(response: { data: T | null; error: Error | null }): T {
     if (response.error) throw response.error;
     return response.data!;

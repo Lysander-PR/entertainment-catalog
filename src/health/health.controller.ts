@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Header } from '@nestjs/common';
 import { HealthCheck } from '@nestjs/terminus';
 import {
   ApiBearerAuth,
@@ -16,6 +16,8 @@ import { Auth } from '@/auth/decorator/auth.decorator';
 import { NoCache } from '@/common/decorators/no-cache.decorator';
 import { Roles } from '@/user/types/enums/roles.enum';
 
+const NO_STORE = 'no-cache, no-store, must-revalidate';
+
 @ApiTags('Health')
 @Controller('health')
 @NoCache()
@@ -23,6 +25,7 @@ export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
   @Get('live')
+  @Header('Cache-Control', NO_STORE)
   @ApiOperation({
     summary: 'Liveness probe: the process is up and serving requests',
   })
@@ -35,6 +38,7 @@ export class HealthController {
   }
 
   @Get('ready')
+  @Header('Cache-Control', NO_STORE)
   @ApiOperation({
     summary: 'Readiness probe: every dependency is reachable',
   })

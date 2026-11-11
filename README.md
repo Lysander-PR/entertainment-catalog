@@ -492,6 +492,18 @@ All endpoints are prefixed with `/api`. Access levels: **Public** needs no token
 | ------ | -------- | ---------------------------------- | ------ |
 | `POST` | `/`      | Populate the database with samples | Admin  |
 
+### Health — `/api/health`
+
+| Method | Endpoint   | Description                                                  | Access |
+| ------ | ---------- | ------------------------------------------------------------ | ------ |
+| `GET`  | `/live`    | Liveness: the process is up, no dependency is checked        | Public |
+| `GET`  | `/ready`   | Readiness: PostgreSQL, Redis and Supabase Storage respond    | Public |
+| `GET`  | `/details` | Status of each dependency, with the error of the failing one | Admin  |
+
+`/ready` only returns `{ "status": "ok" }` (200) or `{ "status": "error" }` (503); the per-dependency details are logged and exposed through `/details`. Health responses are never cached.
+
+Reference: built with [`@nestjs/terminus`](https://docs.nestjs.com/reliability/terminus) (NestJS docs — Health checks).
+
 ### Pagination Parameters
 
 Listing endpoints accept page-based pagination:

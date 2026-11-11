@@ -24,6 +24,7 @@ export const mockStorageService: IStorageService = {
   getFile: jest
     .fn()
     .mockResolvedValue(new Blob(['mock-file-content'], { type: 'text/plain' })),
+  ping: jest.fn().mockResolvedValue(undefined),
 };
 
 const noopInterceptor = {

@@ -8,13 +8,15 @@ import { AlbumsModule } from './albums/albums.module';
 import { GenresModule } from './genres/genres.module';
 import { CommonModule } from './common/common.module';
 import { SeedModule } from './seed/seed.module';
-import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
+import { CacheModule } from '@nestjs/cache-manager';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { databaseConfig } from './config/database.config';
 import { cacheConfig } from './config/cache.config';
 import { HttpLoggerMiddleware } from './common/middleware/http-logger.middleware';
+import { HttpCacheInterceptor } from './common/interceptors/http-cache.interceptor';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -30,11 +32,12 @@ import { AuthModule } from './auth/auth.module';
     SeedModule,
     UserModule,
     AuthModule,
+    HealthModule,
   ],
   providers: [
     {
       provide: APP_INTERCEPTOR,
-      useClass: CacheInterceptor,
+      useClass: HttpCacheInterceptor,
     },
   ],
 })

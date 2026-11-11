@@ -7,7 +7,8 @@ import { CacheService } from './cache.service';
 describe('CacheService', () => {
   let service: CacheService;
   let redisStore: KeyvRedis<unknown>;
-  let client: { scan: jest.Mock; unlink: jest.Mock };
+  let client: { scan: jest.Mock; unlink: jest.Mock; ping: jest.Mock };
+  let getClientSpy: jest.SpyInstance;
 
   const prefix = '/api/albums';
   const scanOptions = { MATCH: `${prefix}*`, COUNT: 1000, TYPE: 'string' };
@@ -24,10 +25,10 @@ describe('CacheService', () => {
   };
 
   beforeEach(async () => {
-    client = { scan: jest.fn(), unlink: jest.fn() };
+    client = { scan: jest.fn(), unlink: jest.fn(), ping: jest.fn() };
     redisStore = new KeyvRedis('redis://localhost:6379');
 
-    jest
+    getClientSpy = jest
       .spyOn(redisStore, 'getClient')
       .mockResolvedValue(client as unknown as RedisClientConnectionType);
 
@@ -36,6 +37,43 @@ describe('CacheService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('ping', () => {
+    it('should get the client from the Redis store and ping it', async () => {
+      client.ping.mockResolvedValue('PONG');
+
+      await expect(service.ping()).resolves.toBeUndefined();
+
+      expect(getClientSpy).toHaveBeenCalledTimes(1);
+      expect(client.ping).toHaveBeenCalledTimes(1);
+    });
+
+    it('should propagate the error when Redis does not respond to the ping', async () => {
+      const error = new Error('Connection is closed');
+      client.ping.mockRejectedValue(error);
+
+      await expect(service.ping()).rejects.toBe(error);
+    });
+
+    it('should propagate the error when the Redis client cannot be retrieved', async () => {
+      const error = new Error('connect ECONNREFUSED');
+      getClientSpy.mockRejectedValue(error);
+
+      await expect(service.ping()).rejects.toBe(error);
+
+      expect(client.ping).not.toHaveBeenCalled();
+    });
+
+    it('should throw an error when no Redis store is configured', async () => {
+      service = await createService([{ store: new Map() }]);
+
+      await expect(service.ping()).rejects.toThrow(
+        'Redis store is not configured',
+      );
+
+      expect(client.ping).not.toHaveBeenCalled();
+    });
   });
 
   it('should scan by prefix and unlink the matching keys', async () => {
